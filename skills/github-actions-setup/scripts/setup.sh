@@ -756,7 +756,14 @@ install_project_skill() {
     curl -fsSL "$raw_base/references/guide.md" -o "$skill_dest/references/guide.md" 2>/dev/null || true
 
     echo ""
-    echo "Skill successfully installed to $skill_dest"
+    echo "🎉 Skill successfully installed to $skill_dest"
+    echo ""
+    echo "How to use it in your IDE (Claude Code, Cursor, Windsurf, Antigravity):"
+    echo "  Ask your AI assistant in chat:"
+    echo "    - \"Set up GitHub Actions CI/CD for this project\""
+    echo "    - \"Audit our .github/workflows/ci-cd.yml for security issues\""
+    echo "    - \"Add automated deployment to Vercel / Cloudflare / Railway\""
+    echo ""
     echo "Tip: Consider adding '$target_dir/' to your .gitignore if you don't want internal skill docs committed."
   fi
 }

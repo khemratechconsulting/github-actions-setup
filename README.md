@@ -58,6 +58,17 @@ It auto-detects your IDE's skill directory:
 - `.claude/skills/` (Claude Code)
 - `.windsurf/skills/` (Windsurf)
 
+### How to use the skill after installation
+
+Once installed, simply talk to your AI assistant inside your IDE in natural language:
+
+- 💬 **"Set up GitHub Actions CI/CD for this project."**
+- 💬 **"Configure automated deployment to Vercel (or Cloudflare / Railway / AWS)."**
+- 💬 **"Audit our current `.github/workflows/ci-cd.yml` for security issues."**
+- 💬 **"Add Dependabot for automated dependency security updates."**
+
+Your AI assistant will read the local skill rulebook and execute the `setup.sh` automation script directly for you!
+
 *Tip:* Add the skill directory to your project's `.gitignore` if you prefer not to commit internal skill documentation into your repo history.
 
 See `skills/github-actions-setup/SKILL.md` for full trigger details.
