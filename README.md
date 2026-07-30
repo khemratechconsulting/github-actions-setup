@@ -10,12 +10,12 @@
 
 ![Release](https://img.shields.io/badge/release-v1.1.0-5b8cff?style=for-the-badge)
 ![Deploy Targets](https://img.shields.io/badge/deploy_targets-6-ff8a5b?style=for-the-badge)
-![Languages](https://img.shields.io/badge/languages-node%20%7C%20python%20%7C%20go-3ecf8e?style=for-the-badge)
-![Supported IDEs](https://img.shields.io/badge/IDEs-Claude%20Code%20%7C%20Cursor%20%7C%20Windsurf%20%7C%20Antigravity-5b8cff?style=for-the-badge)
+![Languages](https://img.shields.io/badge/languages-node%20%7C%20python%20%7C%20go%20%7C%20rust%20%7C%20docker-3ecf8e?style=for-the-badge)
+![Supported IDEs](https://img.shields.io/badge/IDEs-Claude%20Code%20%7C%20Cursor%20%7C%20Windsurf%20%7C%20Antigravity%20%7C%20Void-5b8cff?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-e8e9ed?style=for-the-badge)
 ![Stars](https://img.shields.io/github/stars/khemratechconsulting/github-actions-setup?style=for-the-badge&color=5b8cff)
 
-Auto-detects your language, writes a tested GitHub Actions workflow, and wires up secrets, environments, and dependency updates — the way a careful senior engineer would, not a copy-pasted tutorial.
+Auto-detects your language and framework architecture (Next.js, React, Vue, Angular, NestJS, Python, Go, Rust, Docker), writes a tested GitHub Actions workflow, and wires up secrets, environments, and dependency updates — the way a careful senior engineer would, not a copy-pasted tutorial.
 
 [Website](https://khemratechconsulting.github.io/github-actions-setup) · [Setup Guide](docs/setup-guide.md) · [Pricing & Supporter](https://khemratechconsulting.github.io/github-actions-setup#pricing)
 
@@ -27,8 +27,8 @@ Auto-detects your language, writes a tested GitHub Actions workflow, and wires u
 
 Point it at a project and it will:
 
-- **Detect the language** — Node, Python, or Go, from files already in the repo.
-- **Ask where you deploy** — AWS (S3 + CloudFront via OIDC), Vercel (preview + production), Cloudflare Pages/Workers, Railway, Render, or any server over SSH — with a recommended target badged based on your detected stack.
+- **Intelligently detect language & framework** — Next.js, React, Vue, Angular, NestJS, Express, Python, Go, Rust, and Docker containers.
+- **Differentiate Frontend vs. Backend** — Recommends **Vercel / Cloudflare** for frontend web apps, and **Railway / Render / SSH** for backend APIs and services.
 - **Generate a real workflow** — a `test` job gates a `deploy` job; nothing reaches production without passing tests first.
 - **Set up Dependabot** — weekly dependency + GitHub Actions version updates, for free.
 - **Tell you exactly what to do next** — the precise secret names to add, and which GitHub Environment to create.
