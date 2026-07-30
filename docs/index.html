@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>github-actions-setup — CI/CD in one command</title>
+<meta name="description" content="A Claude skill and open-source toolkit that sets up automated GitHub Actions testing and deployment for any project in one command.">
+<style>
+  :root {
+    --bg: #0b0d12;
+    --bg-card: #12141c;
+    --border: #22252f;
+    --text: #e8e9ed;
+    --text-dim: #9a9ea8;
+    --blue: #5b8cff;
+    --orange: #ff8a5b;
+    --green: #3ecf8e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+  }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo { font-weight: 700; font-size: 18px; display: flex; align-items: center; gap: 8px; }
+  .logo .dot { width: 10px; height: 10px; border-radius: 3px; background: linear-gradient(135deg, var(--blue), var(--orange)); display: inline-block; }
+  nav .links { display: flex; gap: 24px; align-items: center; font-size: 14px; color: var(--text-dim); }
+  .badge-img { height: 20px; vertical-align: middle; }
+
+  .hero {
+    text-align: center;
+    padding: 90px 0 60px;
+    background: radial-gradient(ellipse at top, rgba(91,140,255,0.15), transparent 60%),
+                radial-gradient(ellipse at bottom right, rgba(255,138,91,0.12), transparent 60%);
+  }
+  .hero h1 {
+    font-size: 48px;
+    margin: 0 0 16px;
+    letter-spacing: -0.02em;
+  }
+  .hero h1 span {
+    background: linear-gradient(135deg, var(--blue), var(--orange));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .hero p.sub {
+    color: var(--text-dim);
+    font-size: 18px;
+    max-width: 620px;
+    margin: 0 auto 36px;
+  }
+  .terminal {
+    max-width: 640px;
+    margin: 0 auto 32px;
+    background: #05060a;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 14px;
+    color: #7ee787;
+    text-align: left;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .terminal span.prompt { color: var(--text-dim); }
+  .cta-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-block;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    border: 1px solid var(--border);
+  }
+  .btn:hover { text-decoration: none; }
+  .btn-primary { background: var(--blue); color: #06070b; border-color: var(--blue); }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-secondary { background: transparent; color: var(--text); }
+  .btn-secondary:hover { background: var(--bg-card); }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 0 0 80px;
+  }
+  .stat { background: var(--bg-card); padding: 28px 16px; text-align: center; }
+  .stat .num { font-size: 28px; font-weight: 700; color: var(--blue); }
+  .stat .label { font-size: 13px; color: var(--text-dim); margin-top: 4px; }
+
+  section { padding: 20px 0 70px; }
+  h2 { font-size: 30px; text-align: center; margin: 0 0 10px; }
+  p.section-sub { text-align: center; color: var(--text-dim); max-width: 560px; margin: 0 auto 44px; }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .card .icon { font-size: 22px; margin-bottom: 12px; }
+  .card h3 { margin: 0 0 8px; font-size: 16px; }
+  .card p { margin: 0; color: var(--text-dim); font-size: 14px; }
+
+  .steps { counter-reset: step; display: grid; gap: 18px; max-width: 640px; margin: 0 auto; }
+  .step { display: flex; gap: 16px; align-items: flex-start; }
+  .step .n {
+    flex-shrink: 0;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--blue), var(--orange));
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 14px; color: #06070b;
+  }
+  .step h4 { margin: 0 0 4px; font-size: 15px; }
+  .step p { margin: 0; color: var(--text-dim); font-size: 14px; }
+
+  .pricing { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; max-width: 780px; margin: 0 auto; }
+  .price-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 32px;
+  }
+  .price-card.pro { border-color: var(--orange); position: relative; }
+  .price-card.pro::before {
+    content: "MOST POWERFUL";
+    position: absolute; top: -11px; left: 24px;
+    background: var(--orange); color: #06070b;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.04em;
+    padding: 3px 10px; border-radius: 6px;
+  }
+  .price-card h3 { margin: 0 0 4px; font-size: 20px; }
+  .price-card .price { font-size: 34px; font-weight: 700; margin: 8px 0 20px; }
+  .price-card .price span { font-size: 14px; color: var(--text-dim); font-weight: 400; }
+  .price-card ul { list-style: none; padding: 0; margin: 0 0 24px; display: grid; gap: 10px; }
+  .price-card li { font-size: 14px; color: var(--text-dim); display: flex; gap: 8px; }
+  .price-card li::before { content: "✓"; color: var(--green); flex-shrink: 0; }
+  .price-card .btn { width: 100%; text-align: center; }
+
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 0;
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+
+  @media (max-width: 720px) {
+    .hero h1 { font-size: 32px; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .grid { grid-template-columns: 1fr; }
+    .pricing { grid-template-columns: 1fr; }
+    .terminal { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <nav>
+    <div class="logo"><span class="dot"></span> github-actions-setup</div>
+    <div class="links">
+      <a href="#pricing">Pricing</a>
+      <a href="../docs/setup-guide.md">Guide</a>
+      <a href="https://github.com/khemratechconsulting/github-actions-setup">
+        <img class="badge-img" src="https://img.shields.io/github/stars/khemratechconsulting/github-actions-setup?style=social" alt="GitHub stars">
+      </a>
+    </div>
+  </nav>
+</div>
+
+<div class="hero">
+  <div class="wrap">
+    <h1>CI/CD in <span>one command</span>,<br>not one afternoon.</h1>
+    <p class="sub">Point it at any Node, Python, or Go project. It detects the stack, writes a tested GitHub Actions workflow, and tells you exactly which secrets to add — for AWS, Vercel, or any server you SSH into.</p>
+    <div class="terminal"><span class="prompt">$</span> curl -fsSL https://raw.githubusercontent.com/khemratechconsulting/github-actions-setup/main/skills/github-actions-setup/scripts/setup.sh | bash</div>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="https://github.com/khemratechconsulting/github-actions-setup">View on GitHub</a>
+      <a class="btn btn-secondary" href="#pricing">See Pricing</a>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="stats">
+    <div class="stat"><div class="num">3</div><div class="label">Deploy Targets</div></div>
+    <div class="stat"><div class="num">3</div><div class="label">Languages Auto-Detected</div></div>
+    <div class="stat"><div class="num">1</div><div class="label">Command Setup</div></div>
+    <div class="stat"><div class="num">100%</div><div class="label">Open Source Core</div></div>
+  </div>
+
+  <section id="features">
+    <h2>Everything a careful setup needs</h2>
+    <p class="section-sub">Not a copy-pasted template — the defaults follow the same practices you'd expect from a senior DevOps review.</p>
+    <div class="grid">
+      <div class="card"><div class="icon">🔍</div><h3>Auto language detection</h3><p>Reads package.json, requirements.txt/pyproject.toml, or go.mod — no flags needed for the common case.</p></div>
+      <div class="card"><div class="icon">🔐</div><h3>OIDC over static keys</h3><p>AWS and GCP deploys authenticate via short-lived tokens, not long-lived credentials sitting in Settings.</p></div>
+      <div class="card"><div class="icon">🚦</div><h3>Tests gate deploys</h3><p>The deploy job always depends on the test job passing — a red build can never reach production.</p></div>
+      <div class="card"><div class="icon">🌎</div><h3>Three deploy targets, free</h3><p>AWS (S3 + CloudFront), Vercel (preview + production), or any server over SSH.</p></div>
+      <div class="card"><div class="icon">🤖</div><h3>Dependabot included</h3><p>Weekly dependency and GitHub Actions version updates, configured automatically.</p></div>
+      <div class="card"><div class="icon">🧠</div><h3>Works as a Claude skill</h3><p>Drop it into Claude Code or Cowork and it triggers on "set up CI/CD" without you naming it.</p></div>
+    </div>
+  </section>
+
+  <section id="how">
+    <h2>How it works</h2>
+    <p class="section-sub">Four steps, most of them automatic.</p>
+    <div class="steps">
+      <div class="step"><div class="n">1</div><div><h4>Run the script</h4><p>From your project root — one command, no config file to write by hand.</p></div></div>
+      <div class="step"><div class="n">2</div><div><h4>Pick a deploy target</h4><p>AWS, Vercel, a generic server, or tests-only if you're not ready to automate deploys yet.</p></div></div>
+      <div class="step"><div class="n">3</div><div><h4>Add the secrets it prints</h4><p>The script tells you the exact names to add under Settings → Secrets and variables → Actions.</p></div></div>
+      <div class="step"><div class="n">4</div><div><h4>Push and watch it run</h4><p>Open a PR to see tests run; merge to main to see the deploy job fire.</p></div></div>
+    </div>
+  </section>
+
+  <section id="pricing">
+    <h2>Free core, paid power-ups</h2>
+    <p class="section-sub">The free tier is a complete, production-ready toolkit on its own. Pro adds the deploy targets and patterns larger teams tend to need next.</p>
+    <div class="pricing">
+      <div class="price-card">
+        <h3>Free</h3>
+        <div class="price">$0</div>
+        <ul>
+          <li>Node / Python / Go auto-detection</li>
+          <li>AWS (S3 + CloudFront) via OIDC</li>
+          <li>Vercel preview + production deploys</li>
+          <li>Generic SSH server deploys</li>
+          <li>Dependabot auto-configured</li>
+          <li>MIT licensed, fully open source</li>
+        </ul>
+        <a class="btn btn-secondary" href="https://github.com/khemratechconsulting/github-actions-setup">Get it on GitHub</a>
+      </div>
+      <div class="price-card pro">
+        <h3>Pro</h3>
+        <div class="price">$29 <span>one-time</span></div>
+        <ul>
+          <li>Everything in Free</li>
+          <li>Google Cloud Run deploy (Workload Identity Federation)</li>
+          <li>Docker / GHCR multi-arch builds with caching</li>
+          <li>Staging → production promotion with manual approval gates</li>
+          <li>Slack deploy notifications</li>
+          <li>Direct email support</li>
+        </ul>
+        <a class="btn btn-primary" href="https://khemratechconsulting.gumroad.com/l/github-actions-setup-pro">Buy Pro — instant download</a>
+      </div>
+    </div>
+  </section>
+</div>
+
+<footer>
+  <div class="wrap">
+    MIT Licensed · <a href="https://github.com/khemratechconsulting/github-actions-setup">GitHub</a> · <a href="mailto:sophimphath98@gmail.com">Contact</a>
+  </div>
+</footer>
+
+</body>
+</html>

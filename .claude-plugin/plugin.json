@@ -1,0 +1,15 @@
+{
+  "name": "github-actions-setup",
+  "version": "1.0.0",
+  "description": "Sets up automated CI/CD with GitHub Actions in one pass — test workflow on push/PR, plus deploy to AWS, Vercel, or a generic SSH server.",
+  "author": "khemratechconsulting",
+  "license": "MIT",
+  "homepage": "https://khemratechconsulting.github.io/github-actions-setup",
+  "repository": "https://github.com/khemratechconsulting/github-actions-setup",
+  "skills": [
+    {
+      "name": "github-actions-setup",
+      "path": "skills/github-actions-setup"
+    }
+  ]
+}

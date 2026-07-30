@@ -1,0 +1,78 @@
+# Test + deploy to AWS (S3 + CloudFront static hosting pattern), using OIDC
+# so no long-lived AWS access keys are stored as secrets.
+#
+# Required repo secrets (Settings > Secrets and variables > Actions):
+#   AWS_DEPLOY_ROLE_ARN            - IAM role ARN configured to trust GitHub's OIDC provider
+#   AWS_REGION                     - e.g. us-east-1
+#   AWS_S3_BUCKET                  - target bucket name
+#   AWS_CLOUDFRONT_DISTRIBUTION_ID - distribution to invalidate after deploy
+#
+# If you're deploying a container to ECS/Fargate or an app to Elastic
+# Beanstalk instead of a static site to S3, swap the last two "deploy" steps
+# for `aws ecs update-service ...` or `eb deploy` — everything above the
+# "Configure AWS credentials" step stays the same.
+
+name: CI/CD - AWS
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write   # required for OIDC auth to AWS
+
+env:
+  NODE_VERSION: '20.x'
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build --if-present
+      - run: npm test --if-present
+
+  deploy:
+    name: Deploy to AWS
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production   # add required reviewers under Settings > Environments
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - run: npm ci && npm run build
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Sync build output to S3
+        run: aws s3 sync ./dist "s3://${{ secrets.AWS_S3_BUCKET }}" --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID }}" \
+            --paths "/*"

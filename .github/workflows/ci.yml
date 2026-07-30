@@ -1,0 +1,40 @@
+# Dogfooding: this repo lints its own workflow templates and setup script,
+# so a broken template can never get merged into main.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-templates:
+    name: Validate workflow templates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      - name: Validate every bundled workflow template parses as YAML
+        run: |
+          for f in skills/github-actions-setup/assets/workflows/*.yml; do
+            echo "Checking $f"
+            python3 -c "import yaml,sys; yaml.safe_load(open(sys.argv[1]))" "$f"
+          done
+
+      - name: Shellcheck the setup script
+        uses: ludeeus/action-shellcheck@2.0.0
+        with:
+          scandir: 'skills/github-actions-setup/scripts'
