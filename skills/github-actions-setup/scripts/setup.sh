@@ -177,10 +177,137 @@ if [ "$VALIDATE_MODE" = true ]; then
   exit 0
 fi
 
+# --- IDE / Agent Skill Installer -----------------------------------------
+install_project_skill() {
+  local target_dir=""
+  local detected_dirs=()
+
+  [ -d ".claude/skills" ] && detected_dirs+=(".claude/skills")
+  [ -d ".windsurf/skills" ] && detected_dirs+=(".windsurf/skills")
+  [ -d ".void/skills" ] && detected_dirs+=(".void/skills")
+  [ -d ".kiro/skills" ] && detected_dirs+=(".kiro/skills")
+  [ -d ".codex/skills" ] && detected_dirs+=(".codex/skills")
+  [ -d ".qoder/skills" ] && detected_dirs+=(".qoder/skills")
+  [ -d ".agent/skills" ] && detected_dirs+=(".agent/skills")
+  [ -d ".agents/skills" ] && detected_dirs+=(".agents/skills")
+
+  if [ ${#detected_dirs[@]} -eq 1 ]; then
+    target_dir="${detected_dirs[0]}"
+  elif [ ${#detected_dirs[@]} -gt 1 ]; then
+    if [ "$INTERACTIVE" = true ]; then
+      echo ""
+      echo "Multiple IDE skill directories found:"
+      local idx=1
+      for d in "${detected_dirs[@]}"; do
+        echo "  $idx) $d"
+        idx=$((idx + 1))
+      done
+      read -rp "Choose target [1-${#detected_dirs[@]}]: " sel
+      if [[ "$sel" =~ ^[0-9]+$ ]] && [ "$sel" -ge 1 ] && [ "$sel" -le "${#detected_dirs[@]}" ]; then
+        target_dir="${detected_dirs[$((sel - 1))]}"
+      else
+        target_dir="${detected_dirs[0]}"
+      fi
+    else
+      target_dir="${detected_dirs[0]}"
+    fi
+  else
+    if [ "$INTERACTIVE" = true ]; then
+      echo ""
+      echo "Select IDE skill root format to install to:"
+      echo "  1) .agents/skills  (Cursor, GitHub Copilot, Gemini CLI, Amp, Cline, Warp)"
+      echo "  2) .agent/skills   (Antigravity)"
+      echo "  3) .claude/skills  (Claude Code)"
+      echo "  4) .void/skills    (Void IDE)"
+      echo "  5) .windsurf/skills (Windsurf)"
+      echo "  6) .kiro/skills    (Kiro)"
+      echo "  7) .codex/skills   (Codex / OpenAI)"
+      echo "  8) .qoder/skills   (Qoder)"
+      read -rp "Choose [1-8] (default: 1): " choice
+      case $choice in
+        1|"") target_dir=".agents/skills" ;;
+        2) target_dir=".agent/skills" ;;
+        3) target_dir=".claude/skills" ;;
+        4) target_dir=".void/skills" ;;
+        5) target_dir=".windsurf/skills" ;;
+        6) target_dir=".kiro/skills" ;;
+        7) target_dir=".codex/skills" ;;
+        8) target_dir=".qoder/skills" ;;
+        *) target_dir=".agents/skills" ;;
+      esac
+    else
+      target_dir=".agents/skills"
+    fi
+  fi
+
+  local skill_name="github-actions-setup"
+  local skill_dest="$target_dir/$skill_name"
+
+  if [ -d "$skill_dest" ] && [ "$FORCE" = false ]; then
+    if [ "$INTERACTIVE" = true ]; then
+      echo ""
+      echo "Skill at $skill_dest already exists."
+      echo "  1) Overwrite existing skill ($skill_dest)"
+      echo "  2) Create a new skill with a custom folder name"
+      echo "  3) Cancel"
+      read -rp "Choose [1-3] (default: 1): " ow_choice
+      case $ow_choice in
+        2)
+          read -rp "Enter new skill name (e.g. github-actions-setup-v2): " custom_name
+          if [ -n "$custom_name" ]; then
+            skill_name="$custom_name"
+            skill_dest="$target_dir/$skill_name"
+          fi
+          ;;
+        3)
+          echo "Installation cancelled."
+          return 0
+          ;;
+        *)
+          # Overwrite chosen
+          ;;
+      esac
+    else
+      echo "Skill at $skill_dest already exists. Pass --force to overwrite." >&2
+      return 0
+    fi
+  fi
+
+  local script_dir
+  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  local skill_src
+  skill_src="$(cd "$script_dir/.." && pwd)"
+
+  mkdir -p "$skill_dest"
+  if [ -f "$skill_src/SKILL.md" ]; then
+    cp -R "$skill_src/"* "$skill_dest/" 2>/dev/null || cp -r "$skill_src/"* "$skill_dest/"
+    echo ""
+    echo "Skill installed to $skill_dest"
+    echo "Tip: Consider adding '$target_dir/' to your .gitignore if you don't want internal skill docs committed."
+  else
+    echo "Fetching skill files from GitHub repository..."
+    local raw_base="https://raw.githubusercontent.com/khemratechconsulting/github-actions-setup/main/skills/github-actions-setup"
+    
+    mkdir -p "$skill_dest/scripts" "$skill_dest/references" "$skill_dest/assets/workflows"
+    curl -fsSL "$raw_base/SKILL.md" -o "$skill_dest/SKILL.md"
+    curl -fsSL "$raw_base/scripts/setup.sh" -o "$skill_dest/scripts/setup.sh" && chmod +x "$skill_dest/scripts/setup.sh"
+    curl -fsSL "$raw_base/references/best-practices.md" -o "$skill_dest/references/best-practices.md" 2>/dev/null || true
+    curl -fsSL "$raw_base/references/guide.md" -o "$skill_dest/references/guide.md" 2>/dev/null || true
+
+    echo ""
+    echo "🎉 Skill successfully installed to $skill_dest"
+    echo ""
+    echo "How to use it in your IDE (Claude Code, Cursor, Windsurf, Antigravity, Void):"
+    echo "  Ask your AI assistant in chat:"
+    echo "    - \"Set up GitHub Actions CI/CD for this project\""
+    echo "    - \"Audit our .github/workflows/ci-cd.yml for security issues\""
+    echo "    - \"Add automated deployment to Vercel / Cloudflare / Railway\""
+    echo ""
+    echo "Tip: Consider adding '$target_dir/' to your .gitignore if you don't want internal skill docs committed."
+  fi
+}
+
 # --- Default Mode: Install IDE Skill -------------------------------------
-# By default, executing setup.sh installs the skill into the local project IDE
-# directory (.agents/, .claude/, .void/, etc.). It does NOT ask for deploy options
-# or generate workflow files unless explicitly requested with --deploy or --generate.
 if [ "$GENERATE_MODE" = false ] && [ -z "$DEPLOY_TARGET" ]; then
   INTERACTIVE=true
   if [ ! -t 0 ]; then
@@ -646,139 +773,4 @@ case "$DEPLOY_TARGET" in
     echo "Scope it as narrowly as the platform allows and rotate it periodically."
     ;;
 esac
-
-# --- IDE / Agent Skill Installer -----------------------------------------
-# Opt-in installation into project-level AI assistant skill directories.
-# Never runs silently in non-interactive mode unless --install-skill is passed.
-install_project_skill() {
-  # Determine target directory based on existing markers or prompt
-  local target_dir=""
-  local detected_dirs=()
-
-  [ -d ".claude/skills" ] && detected_dirs+=(".claude/skills")
-  [ -d ".windsurf/skills" ] && detected_dirs+=(".windsurf/skills")
-  [ -d ".void/skills" ] && detected_dirs+=(".void/skills")
-  [ -d ".kiro/skills" ] && detected_dirs+=(".kiro/skills")
-  [ -d ".codex/skills" ] && detected_dirs+=(".codex/skills")
-  [ -d ".qoder/skills" ] && detected_dirs+=(".qoder/skills")
-  [ -d ".agent/skills" ] && detected_dirs+=(".agent/skills")
-  [ -d ".agents/skills" ] && detected_dirs+=(".agents/skills")
-
-  if [ ${#detected_dirs[@]} -eq 1 ]; then
-    target_dir="${detected_dirs[0]}"
-  elif [ ${#detected_dirs[@]} -gt 1 ]; then
-    if [ "$INTERACTIVE" = true ]; then
-      echo ""
-      echo "Multiple IDE skill directories found:"
-      local idx=1
-      for d in "${detected_dirs[@]}"; do
-        echo "  $idx) $d"
-        idx=$((idx + 1))
-      done
-      read -rp "Choose target [1-${#detected_dirs[@]}]: " sel
-      if [[ "$sel" =~ ^[0-9]+$ ]] && [ "$sel" -ge 1 ] && [ "$sel" -le "${#detected_dirs[@]}" ]; then
-        target_dir="${detected_dirs[$((sel - 1))]}"
-      else
-        target_dir="${detected_dirs[0]}"
-      fi
-    else
-      target_dir="${detected_dirs[0]}"
-    fi
-  else
-    if [ "$INTERACTIVE" = true ]; then
-      echo ""
-      echo "Select IDE skill root format to install to:"
-      echo "  1) .agents/skills  (Cursor, GitHub Copilot, Gemini CLI, Amp, Cline, Warp)"
-      echo "  2) .agent/skills   (Antigravity)"
-      echo "  3) .claude/skills  (Claude Code)"
-      echo "  4) .void/skills    (Void IDE)"
-      echo "  5) .windsurf/skills (Windsurf)"
-      echo "  6) .kiro/skills    (Kiro)"
-      echo "  7) .codex/skills   (Codex / OpenAI)"
-      echo "  8) .qoder/skills   (Qoder)"
-      read -rp "Choose [1-8] (default: 1): " choice
-      case $choice in
-        1|"") target_dir=".agents/skills" ;;
-        2) target_dir=".agent/skills" ;;
-        3) target_dir=".claude/skills" ;;
-        4) target_dir=".void/skills" ;;
-        5) target_dir=".windsurf/skills" ;;
-        6) target_dir=".kiro/skills" ;;
-        7) target_dir=".codex/skills" ;;
-        8) target_dir=".qoder/skills" ;;
-        *) target_dir=".agents/skills" ;;
-      esac
-    else
-      target_dir=".agents/skills"
-    fi
-  fi
-
-  local skill_name="github-actions-setup"
-  local skill_dest="$target_dir/$skill_name"
-
-  if [ -d "$skill_dest" ] && [ "$FORCE" = false ]; then
-    if [ "$INTERACTIVE" = true ]; then
-      echo ""
-      echo "Skill at $skill_dest already exists."
-      echo "  1) Overwrite existing skill ($skill_dest)"
-      echo "  2) Create a new skill with a custom folder name"
-      echo "  3) Cancel"
-      read -rp "Choose [1-3] (default: 1): " ow_choice
-      case $ow_choice in
-        2)
-          read -rp "Enter new skill name (e.g. github-actions-setup-v2): " custom_name
-          if [ -n "$custom_name" ]; then
-            skill_name="$custom_name"
-            skill_dest="$target_dir/$skill_name"
-          fi
-          ;;
-        3)
-          echo "Installation cancelled."
-          return 0
-          ;;
-        *)
-          # Overwrite chosen
-          ;;
-      esac
-    else
-      echo "Skill at $skill_dest already exists. Pass --force to overwrite." >&2
-      return 0
-    fi
-  fi
-
-  # Find origin skill directory
-  local script_dir
-  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-  local skill_src
-  skill_src="$(cd "$script_dir/.." && pwd)"
-
-  mkdir -p "$skill_dest"
-  if [ -f "$skill_src/SKILL.md" ]; then
-    cp -R "$skill_src/"* "$skill_dest/" 2>/dev/null || cp -r "$skill_src/"* "$skill_dest/"
-    echo ""
-    echo "Skill installed to $skill_dest"
-    echo "Tip: Consider adding '$target_dir/' to your .gitignore if you don't want internal skill docs committed."
-  else
-    # Running via remote curl pipe (curl | bash): fetch SKILL.md, scripts, and references from remote repository
-    echo "Fetching skill files from GitHub repository..."
-    local raw_base="https://raw.githubusercontent.com/khemratechconsulting/github-actions-setup/main/skills/github-actions-setup"
-    
-    mkdir -p "$skill_dest/scripts" "$skill_dest/references" "$skill_dest/assets/workflows"
-    curl -fsSL "$raw_base/SKILL.md" -o "$skill_dest/SKILL.md"
-    curl -fsSL "$raw_base/scripts/setup.sh" -o "$skill_dest/scripts/setup.sh" && chmod +x "$skill_dest/scripts/setup.sh"
-    curl -fsSL "$raw_base/references/best-practices.md" -o "$skill_dest/references/best-practices.md" 2>/dev/null || true
-    curl -fsSL "$raw_base/references/guide.md" -o "$skill_dest/references/guide.md" 2>/dev/null || true
-
-    echo ""
-    echo "🎉 Skill successfully installed to $skill_dest"
-    echo ""
-    echo "How to use it in your IDE (Claude Code, Cursor, Windsurf, Antigravity):"
-    echo "  Ask your AI assistant in chat:"
-    echo "    - \"Set up GitHub Actions CI/CD for this project\""
-    echo "    - \"Audit our .github/workflows/ci-cd.yml for security issues\""
-    echo "    - \"Add automated deployment to Vercel / Cloudflare / Railway\""
-    echo ""
-    echo "Tip: Consider adding '$target_dir/' to your .gitignore if you don't want internal skill docs committed."
-  fi
-}
 
