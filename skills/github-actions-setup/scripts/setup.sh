@@ -208,29 +208,40 @@ detect_language() {
   fi
 }
 
-# Best-effort stack profile, used only to badge recommended deploy targets in
-# the interactive menu below - never blocks a choice, and an ambiguous result
-# just means no badge is shown rather than a guess. Detected once from
-# whatever manifest is already in the project; this is not re-run per file.
+# Smart stack & framework profile detector. Automatically separates Frontend
+# (Next.js, React, Vue.js, Angular, Svelte, Nuxt, Astro) from Backend (NestJS,
+# Express, Fastify, Python FastAPI/Django, Go) to recommend the exact deploy target.
 detect_stack_profile() {
   case "$LANG_DETECTED" in
     node)
-      if [ -f "package.json" ] && grep -qE '"(express|fastify|koa|@nestjs/core|hapi)"[[:space:]]*:' package.json; then
-        echo "node-api"
-      elif [ -f "package.json" ] && grep -qE '"(next|vite|react-scripts|astro|gatsby|nuxt)"[[:space:]]*:' package.json; then
-        echo "node-static"
+      if [ -f "package.json" ]; then
+        if grep -qE '"@nestjs/core"[[:space:]]*:' package.json; then
+          echo "backend-nestjs"
+        elif grep -qE '"(express|fastify|koa|hapi|@adonisjs/core)"[[:space:]]*:' package.json; then
+          echo "backend-node-api"
+        elif grep -qE '"next"[[:space:]]*:' package.json; then
+          echo "frontend-nextjs"
+        elif grep -qE '"(vue|nuxt)"[[:space:]]*:' package.json; then
+          echo "frontend-vue"
+        elif grep -qE '"@angular/core"[[:space:]]*:' package.json; then
+          echo "frontend-angular"
+        elif grep -qE '"(react|react-dom|vite|astro|svelte)"[[:space:]]*:' package.json; then
+          echo "frontend-react-static"
+        else
+          echo "node-generic"
+        fi
       else
-        echo "node-unknown"
+        echo "node-generic"
       fi
       ;;
     python)
-      if grep -qsE 'fastapi|flask|django' requirements.txt pyproject.toml 2>/dev/null; then
-        echo "python-web"
+      if grep -qsE 'fastapi|flask|django|tornado|sanic' requirements.txt pyproject.toml Pipfile 2>/dev/null; then
+        echo "backend-python"
       else
-        echo "python-unknown"
+        echo "python-generic"
       fi
       ;;
-    go) echo "go-web" ;;
+    go) echo "backend-go" ;;
     *) echo "unknown" ;;
   esac
 }
@@ -265,10 +276,15 @@ if [ -z "$DEPLOY_TARGET" ]; then
     # go-web -> railway/render/server. Ambiguous profiles show no badge.
     REC_VERCEL=""; REC_CLOUDFLARE=""; REC_RAILWAY=""; REC_RENDER=""; REC_SERVER=""
     case "$STACK_PROFILE" in
-      node-static) REC_VERCEL=" (Recommended)"; REC_CLOUDFLARE=" (Recommended)" ;;
-      node-api) REC_RAILWAY=" (Recommended)"; REC_RENDER=" (Recommended)"; REC_SERVER=" (Recommended)" ;;
-      python-web) REC_RENDER=" (Recommended)"; REC_RAILWAY=" (Recommended)"; REC_SERVER=" (Recommended)" ;;
-      go-web) REC_RAILWAY=" (Recommended)"; REC_RENDER=" (Recommended)"; REC_SERVER=" (Recommended)" ;;
+      frontend-nextjs|frontend-vue|frontend-angular|frontend-react-static)
+        REC_VERCEL=" (Recommended for Frontend)"
+        REC_CLOUDFLARE=" (Recommended for Frontend)"
+        ;;
+      backend-nestjs|backend-node-api|backend-python|backend-go)
+        REC_RAILWAY=" (Recommended for Backend)"
+        REC_RENDER=" (Recommended for Backend)"
+        REC_SERVER=" (Recommended for Backend)"
+        ;;
     esac
 
     echo ""

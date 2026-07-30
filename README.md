@@ -1,6 +1,8 @@
 <div align="center">
 
-![github-actions-setup](docs/assets/hero-banner.png)
+<a href="https://khemratechconsulting.github.io/github-actions-setup" target="_blank">
+  <img src="docs/assets/hero-banner.png" alt="github-actions-setup hero banner" width="100%" />
+</a>
 
 # github-actions-setup
 
@@ -9,13 +11,13 @@
 ![Release](https://img.shields.io/badge/release-v1.1.0-5b8cff?style=for-the-badge)
 ![Deploy Targets](https://img.shields.io/badge/deploy_targets-6-ff8a5b?style=for-the-badge)
 ![Languages](https://img.shields.io/badge/languages-node%20%7C%20python%20%7C%20go-3ecf8e?style=for-the-badge)
+![Supported IDEs](https://img.shields.io/badge/IDEs-Claude%20Code%20%7C%20Cursor%20%7C%20Windsurf%20%7C%20Antigravity-5b8cff?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-e8e9ed?style=for-the-badge)
-![Pricing Tiers](https://img.shields.io/badge/pricing_tiers-2-5b8cff?style=for-the-badge)
 ![Stars](https://img.shields.io/github/stars/khemratechconsulting/github-actions-setup?style=for-the-badge&color=5b8cff)
 
 Auto-detects your language, writes a tested GitHub Actions workflow, and wires up secrets, environments, and dependency updates — the way a careful senior engineer would, not a copy-pasted tutorial.
 
-[Website](https://khemratechconsulting.github.io/github-actions-setup) · [Setup Guide](docs/setup-guide.md) · [Pricing](https://khemratechconsulting.github.io/github-actions-setup#pricing)
+[Website](https://khemratechconsulting.github.io/github-actions-setup) · [Setup Guide](docs/setup-guide.md) · [Pricing & Supporter](https://khemratechconsulting.github.io/github-actions-setup#pricing)
 
 </div>
 
