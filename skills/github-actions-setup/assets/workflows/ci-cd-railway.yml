@@ -1,0 +1,64 @@
+# Test + deploy to Railway using the official Railway CLI.
+#
+# Required repo secrets (Settings > Secrets and variables > Actions):
+#   RAILWAY_TOKEN   - a Railway project token (Project Settings > Tokens)
+#   RAILWAY_SERVICE - the service name within that Railway project to deploy
+#
+# Security note: Railway does not currently support GitHub OIDC federation,
+# so this authenticates with a static project token instead of the
+# short-lived credentials used in the AWS template. Scope the token to a
+# single project (not an account-wide token) and rotate it periodically.
+#
+# This example is written for a Node.js service. Swap the setup-node step
+# and test commands for your language - Railway's own build (Nixpacks or a
+# Dockerfile in the repo) runs on Railway's side regardless of what this job
+# tests beforehand.
+
+name: CI/CD - Railway
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '20.x'
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - run: npm test --if-present
+
+  deploy:
+    name: Deploy to Railway
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production   # add required reviewers under Settings > Environments
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: railway up --service "${{ secrets.RAILWAY_SERVICE }}"

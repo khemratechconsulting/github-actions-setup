@@ -1,0 +1,57 @@
+# Test, then trigger a Render deploy hook.
+#
+# Required repo secrets (Settings > Secrets and variables > Actions):
+#   RENDER_DEPLOY_HOOK_URL - from the Render service's Settings > Deploy Hook
+#
+# Security note: Render does not currently support GitHub OIDC federation,
+# and there's no separate token here at all - the deploy hook URL itself is
+# the secret (anyone with it can trigger a deploy), so treat it exactly like
+# a password. Render pulls the actual code from whatever source it already
+# has connected/configured; this job doesn't check out or upload anything,
+# it only tells Render "deploy now."
+#
+# This example is written for a Node.js service. Swap the setup-node step
+# and test commands for your language - the deploy step itself doesn't care,
+# since Render builds independently on its own side.
+
+name: CI/CD - Render
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '20.x'
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - run: npm test --if-present
+
+  deploy:
+    name: Deploy to Render
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production   # add required reviewers under Settings > Environments
+    steps:
+      - name: Trigger Render deploy hook
+        run: curl -fsSL -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"

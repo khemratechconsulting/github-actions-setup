@@ -1,0 +1,71 @@
+# Test + deploy to Cloudflare Pages using the Wrangler CLI.
+#
+# Required repo secrets (Settings > Secrets and variables > Actions):
+#   CLOUDFLARE_API_TOKEN   - scoped to "Cloudflare Pages:Edit" for this account only
+#   CLOUDFLARE_ACCOUNT_ID  - found on the right sidebar of the Cloudflare dashboard
+#   CLOUDFLARE_PROJECT_NAME - the Pages project name to deploy to
+#
+# Security note: Cloudflare does not currently support GitHub OIDC
+# federation, so this authenticates with a static API token instead of the
+# short-lived credentials used in the AWS template. Scope the token to the
+# minimum permission Cloudflare allows (Pages:Edit on this account, not a
+# global/account-owner token) and rotate it periodically.
+#
+# If you're deploying a Worker instead of a Pages site, swap the final
+# `wrangler-action` command for `deploy` (Workers) instead of `pages deploy`.
+
+name: CI/CD - Cloudflare
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '20.x'
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build --if-present
+      - run: npm test --if-present
+
+  deploy:
+    name: Deploy to Cloudflare Pages
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production   # add required reviewers under Settings > Environments
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - run: npm ci && npm run build
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy ./dist --project-name=${{ secrets.CLOUDFLARE_PROJECT_NAME }}

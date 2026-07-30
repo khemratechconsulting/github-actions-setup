@@ -8,9 +8,10 @@
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <style>
   :root {
-    --bg: #0b0d12; --bg-card: #12141c; --border: #22252f;
+    --bg: #0b0d12; --bg-card: #12141c; --bg-card-hover: #171a24; --border: #22252f;
     --text: #e8e9ed; --text-dim: #9a9ea8;
     --blue: #5b8cff; --orange: #ff8a5b; --green: #3ecf8e;
+    scroll-behavior: smooth;
   }
   * { box-sizing: border-box; }
   body {
@@ -20,8 +21,20 @@
   }
   a { color: var(--blue); }
   .wrap { max-width: 560px; margin: 0 auto; padding: 100px 24px; }
-  .back { display: inline-block; margin-bottom: 28px; color: var(--text-dim); font-size: 14px; text-decoration: none; }
-  .back:hover { color: var(--text); }
+  /* Was a plain dim text link - now a real button so "go back to pricing"
+     reads as a clear, tappable action rather than incidental page furniture. */
+  .back {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-bottom: 28px; padding: 9px 16px;
+    border: 1px solid var(--border); border-radius: 8px;
+    background: var(--bg-card); color: var(--text);
+    font-size: 14px; font-weight: 600; text-decoration: none;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .back:hover { background: var(--bg-card-hover); border-color: var(--blue); text-decoration: none; }
+  @media (max-width: 600px) {
+    .wrap { padding: 56px 20px; } /* 100px top padding was excessive once the viewport itself is short */
+  }
   .logo-row { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; font-weight: 700; }
   .card {
     background: var(--bg-card); border: 1px solid var(--border);

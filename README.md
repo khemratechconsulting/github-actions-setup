@@ -6,8 +6,8 @@
 
 **A Claude skill that sets up automated CI/CD for any project in one command.**
 
-![Release](https://img.shields.io/badge/release-v1.0.0-5b8cff?style=for-the-badge)
-![Deploy Targets](https://img.shields.io/badge/deploy_targets-3-ff8a5b?style=for-the-badge)
+![Release](https://img.shields.io/badge/release-v1.1.0-5b8cff?style=for-the-badge)
+![Deploy Targets](https://img.shields.io/badge/deploy_targets-6-ff8a5b?style=for-the-badge)
 ![Languages](https://img.shields.io/badge/languages-node%20%7C%20python%20%7C%20go-3ecf8e?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-e8e9ed?style=for-the-badge)
 ![Pricing Tiers](https://img.shields.io/badge/pricing_tiers-2-5b8cff?style=for-the-badge)
@@ -26,7 +26,7 @@ Auto-detects your language, writes a tested GitHub Actions workflow, and wires u
 Point it at a project and it will:
 
 - **Detect the language** — Node, Python, or Go, from files already in the repo.
-- **Ask where you deploy** — AWS (S3 + CloudFront via OIDC), Vercel (preview + production), or any server over SSH.
+- **Ask where you deploy** — AWS (S3 + CloudFront via OIDC), Vercel (preview + production), Cloudflare Pages/Workers, Railway, Render, or any server over SSH — with a recommended target badged based on your detected stack.
 - **Generate a real workflow** — a `test` job gates a `deploy` job; nothing reaches production without passing tests first.
 - **Set up Dependabot** — weekly dependency + GitHub Actions version updates, for free.
 - **Tell you exactly what to do next** — the precise secret names to add, and which GitHub Environment to create.
@@ -46,12 +46,17 @@ This repo is also a [Claude skill](https://docs.claude.com/en/docs/claude-code/s
 
 ## What's included (free, MIT-licensed)
 
-| Template | Covers |
-|---|---|
-| `ci-only.yml` | Tests only, matrix across two Node versions |
-| `ci-cd-aws.yml` | Test → deploy to S3/CloudFront, OIDC auth |
-| `ci-cd-vercel.yml` | Test → PR previews → production deploy |
-| `ci-cd-generic-server.yml` | Test → SSH deploy + process restart |
+| Template | Covers | Auth |
+|---|---|---|
+| `ci-only.yml` | Tests only, matrix across two Node versions | — |
+| `ci-cd-aws.yml` | Test → deploy to S3/CloudFront | GitHub OIDC, no static keys |
+| `ci-cd-vercel.yml` | Test → PR previews → production deploy | Static token |
+| `ci-cd-cloudflare.yml` | Test → deploy to Cloudflare Pages (Wrangler) | Static, scoped API token |
+| `ci-cd-railway.yml` | Test → deploy via Railway CLI | Static project token |
+| `ci-cd-render.yml` | Test → trigger a Render deploy hook | Static hook URL |
+| `ci-cd-generic-server.yml` | Test → SSH deploy + process restart | Static SSH key |
+
+AWS is the only target here with GitHub OIDC federation — no long-lived credentials stored anywhere. Cloudflare, Railway, and Render don't support OIDC from GitHub yet, so those three (and Vercel/server) rely on a static secret; scope it as narrowly as the platform allows and rotate it periodically.
 
 Full write-up of the security and efficiency choices baked into these: [`skills/github-actions-setup/references/best-practices.md`](skills/github-actions-setup/references/best-practices.md).
 

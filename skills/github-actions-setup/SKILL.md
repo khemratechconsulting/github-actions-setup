@@ -10,11 +10,15 @@ This skill takes a project from no automation to "push to main and it tests + de
 ## When this triggers, figure out two things first
 
 1. **What language/stack is the project?** Look for `package.json`, `requirements.txt`/`pyproject.toml`, or `go.mod` in the project directory. If none of those are present, ask.
-2. **Where does it deploy?** AWS, Vercel, a generic server (anything reachable over SSH), or nothing yet (tests only). If the user hasn't said, ask — don't guess, since the secrets and deploy steps are completely different per target. If they mention a specific host they SSH into, that's "server"; if they mention S3/CloudFront/ECS, that's "aws"; if they mention Vercel or a framework Vercel is known for (Next.js, etc.) and don't correct you, "vercel" is a safe assumption to confirm.
+2. **Where does it deploy?** AWS, Vercel, Cloudflare Pages/Workers, Railway, Render, a generic server (anything reachable over SSH), or nothing yet (tests only). If the user hasn't said, ask — don't guess, since the secrets and deploy steps are completely different per target. If they mention a specific host they SSH into, that's "server"; if they mention S3/CloudFront/ECS, that's "aws"; if they mention Vercel or a framework Vercel is known for (Next.js, etc.) and don't correct you, "vercel" is a safe assumption to confirm; Cloudflare Pages/Workers, Railway, and Render map directly if named.
+
+   Only AWS authenticates via GitHub OIDC (no stored long-lived credentials). Cloudflare, Railway, and Render don't support OIDC federation from GitHub yet, so those three use a static API token or deploy hook URL stored as a repo secret instead — mention this when walking through secrets for one of those targets, don't imply all five are equivalent in security posture.
+
+   When the target isn't obvious from what the user said, the script's interactive menu badges a recommended target based on the detected stack (static Node frontends toward Vercel/Cloudflare; Node APIs, Python web frameworks, and Go services toward Railway/Render/server) — a useful default to suggest, not a rule to enforce.
 
 ## Fastest path: run the script
 
-For a real project directory, the cleanest approach is to run `scripts/setup.sh` from the project root (it needs execute permission: `chmod +x scripts/setup.sh` first if copied somewhere new). It auto-detects the language, and takes the deploy target either interactively or via `--deploy=aws|vercel|server|none`. It writes `.github/workflows/ci-cd.yml` and a `.github/dependabot.yml` for automatic dependency updates, and prints the exact secret names the user still needs to add in GitHub before their first push.
+For a real project directory, the cleanest approach is to run `scripts/setup.sh` from the project root (it needs execute permission: `chmod +x scripts/setup.sh` first if copied somewhere new). It auto-detects the language, and takes the deploy target either interactively or via `--deploy=aws|vercel|cloudflare|railway|render|server|none`. It writes `.github/workflows/ci-cd.yml` and a `.github/dependabot.yml` for automatic dependency updates, and prints the exact secret names the user still needs to add in GitHub before their first push.
 
 Prefer running the script over hand-writing YAML when you have shell access to the user's project — it guarantees valid, tested output and takes one command.
 
@@ -29,7 +33,12 @@ If the user just wants to see or copy a workflow file (no shell access to their 
 - `ci-only.yml` — tests only, no deploy. Good starting point for a project not ready to automate deployment yet.
 - `ci-cd-aws.yml` — test job + deploy to S3/CloudFront via AWS OIDC (no static keys). Note in the file explains how to adapt the deploy step for ECS/Elastic Beanstalk instead.
 - `ci-cd-vercel.yml` — test job + PR preview deploys + production deploy on merge to main.
+- `ci-cd-cloudflare.yml` — test job + deploy to Cloudflare Pages via a scoped API token (Wrangler CLI).
+- `ci-cd-railway.yml` — test job + deploy via the official Railway CLI and a project token.
+- `ci-cd-render.yml` — test job + trigger a Render deploy hook (no checkout needed in the deploy step — Render builds from its own connected source).
 - `ci-cd-generic-server.yml` — test job + SSH deploy (pull + restart) to any server.
+
+Cloudflare, Railway, and Render templates all use a static token/hook URL rather than OIDC, since none of the three support GitHub OIDC federation yet — call this out if the user asks why it differs from the AWS template.
 
 Each template has a comment header listing the exact repo secrets it needs. Walk the user through adding those under **Settings → Secrets and variables → Actions** — don't just hand them the file and move on, since a workflow with missing secrets fails on first run in a confusing way.
 
@@ -49,4 +58,4 @@ Once a workflow file exists (from the script or a copied template), walk the use
 4. Merge to `main`, confirm `deploy` runs and the app actually updates.
 5. Optionally turn on branch protection on `main` requiring the CI check before merge — mention this as a good next step, don't assume it's wanted.
 
-Don't invent a deploy target that isn't one of the three supported here. If the user needs something else (Kubernetes, Cloudflare Pages, Netlify, GCP, Azure), say the bundled templates don't cover it directly, then adapt the closest template's structure (test job gating a deploy job, same secrets/environment pattern) using the target's official GitHub Action.
+Don't invent a deploy target that isn't one of the six supported here (AWS, Vercel, Cloudflare, Railway, Render, generic server). If the user needs something else (Kubernetes, Netlify, GCP, Azure), say the bundled templates don't cover it directly, then adapt the closest template's structure (test job gating a deploy job, same secrets/environment pattern) using the target's official GitHub Action.

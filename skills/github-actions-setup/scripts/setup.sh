@@ -4,7 +4,8 @@
 #
 # Usage:
 #   ./setup.sh                    interactive prompts
-#   ./setup.sh --deploy=aws       non-interactive (aws | vercel | server | none)
+#   ./setup.sh --deploy=aws       non-interactive
+#                                 (aws | vercel | cloudflare | railway | render | server | none)
 #   ./setup.sh --lang=node        skip language auto-detection (node | python | go)
 #   ./setup.sh --force            overwrite an existing workflow file without asking
 #   ./setup.sh --validate         audit existing .github/workflows/*.yml instead of
@@ -27,6 +28,13 @@
 # pyproject.toml -> Python, go.mod -> Go), asks (or takes as a flag) which
 # environment to deploy to, and writes .github/workflows/ci-cd.yml plus
 # .github/dependabot.yml. Safe to re-run - it asks before overwriting.
+#
+# Security note on deploy targets: AWS authenticates via GitHub OIDC (no
+# long-lived keys stored anywhere). Cloudflare, Railway, and Render do not
+# currently support OIDC federation from GitHub Actions, so those three use a
+# static API token/deploy hook stored as a repo secret instead - a real step
+# down in posture from the AWS pattern. Scope those tokens as narrowly as
+# each platform allows and rotate them periodically.
 
 set -euo pipefail
 
@@ -199,6 +207,33 @@ detect_language() {
   fi
 }
 
+# Best-effort stack profile, used only to badge recommended deploy targets in
+# the interactive menu below - never blocks a choice, and an ambiguous result
+# just means no badge is shown rather than a guess. Detected once from
+# whatever manifest is already in the project; this is not re-run per file.
+detect_stack_profile() {
+  case "$LANG_DETECTED" in
+    node)
+      if [ -f "package.json" ] && grep -qE '"(express|fastify|koa|@nestjs/core|hapi)"[[:space:]]*:' package.json; then
+        echo "node-api"
+      elif [ -f "package.json" ] && grep -qE '"(next|vite|react-scripts|astro|gatsby|nuxt)"[[:space:]]*:' package.json; then
+        echo "node-static"
+      else
+        echo "node-unknown"
+      fi
+      ;;
+    python)
+      if grep -qsE 'fastapi|flask|django' requirements.txt pyproject.toml 2>/dev/null; then
+        echo "python-web"
+      else
+        echo "python-unknown"
+      fi
+      ;;
+    go) echo "go-web" ;;
+    *) echo "unknown" ;;
+  esac
+}
+
 if [ -n "$LANG_OVERRIDE" ]; then
   LANG_DETECTED="$LANG_OVERRIDE"
   echo "Using language: $LANG_DETECTED (from --lang)"
@@ -221,23 +256,43 @@ fi
 
 if [ -z "$DEPLOY_TARGET" ]; then
   if [ "$INTERACTIVE" = true ]; then
+    STACK_PROFILE=$(detect_stack_profile)
+
+    # Recommendation badges only - every option stays selectable regardless.
+    # Mapping follows the stack table: node-static -> vercel/cloudflare,
+    # node-api -> railway/render/server, python-web -> render/railway/server,
+    # go-web -> railway/render/server. Ambiguous profiles show no badge.
+    REC_VERCEL=""; REC_CLOUDFLARE=""; REC_RAILWAY=""; REC_RENDER=""; REC_SERVER=""
+    case "$STACK_PROFILE" in
+      node-static) REC_VERCEL=" (Recommended)"; REC_CLOUDFLARE=" (Recommended)" ;;
+      node-api) REC_RAILWAY=" (Recommended)"; REC_RENDER=" (Recommended)"; REC_SERVER=" (Recommended)" ;;
+      python-web) REC_RENDER=" (Recommended)"; REC_RAILWAY=" (Recommended)"; REC_SERVER=" (Recommended)" ;;
+      go-web) REC_RAILWAY=" (Recommended)"; REC_RENDER=" (Recommended)"; REC_SERVER=" (Recommended)" ;;
+    esac
+
     echo ""
     echo "Where should this project deploy to?"
     echo "  1) AWS (S3 + CloudFront)"
-    echo "  2) Vercel"
-    echo "  3) Generic server (SSH)"
-    echo "  4) None (tests only)"
-    read -rp "Choose [1-4]: " choice
+    echo "  2) Vercel${REC_VERCEL}"
+    echo "  3) Cloudflare Pages/Workers${REC_CLOUDFLARE}"
+    echo "  4) Railway${REC_RAILWAY}"
+    echo "  5) Render${REC_RENDER}"
+    echo "  6) Generic server (SSH)${REC_SERVER}"
+    echo "  7) None (tests only)"
+    read -rp "Choose [1-7]: " choice
     case $choice in
       1) DEPLOY_TARGET="aws" ;;
       2) DEPLOY_TARGET="vercel" ;;
-      3) DEPLOY_TARGET="server" ;;
-      4) DEPLOY_TARGET="none" ;;
+      3) DEPLOY_TARGET="cloudflare" ;;
+      4) DEPLOY_TARGET="railway" ;;
+      5) DEPLOY_TARGET="render" ;;
+      6) DEPLOY_TARGET="server" ;;
+      7) DEPLOY_TARGET="none" ;;
       *) echo "Invalid choice" >&2; exit 1 ;;
     esac
   else
     echo "No terminal available to prompt for a deploy target." >&2
-    echo "Re-run with --deploy=aws|vercel|server|none, e.g.:" >&2
+    echo "Re-run with --deploy=aws|vercel|cloudflare|railway|render|server|none, e.g.:" >&2
     echo '  curl -fsSL <raw-url> | bash -s -- --deploy=vercel' >&2
     exit 1
   fi
@@ -374,6 +429,83 @@ EOF
 )
     SECRETS_NEEDED="VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID"
     ;;
+  cloudflare)
+    DEPLOY_JOB=$(cat <<'EOF'
+
+  deploy:
+    name: Deploy to Cloudflare Pages
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build --if-present
+      # Uses a scoped Cloudflare API Token (Account.Cloudflare Pages:Edit),
+      # not OIDC - Cloudflare does not support GitHub OIDC federation yet.
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy ./dist --project-name=${{ secrets.CLOUDFLARE_PROJECT_NAME }}
+EOF
+)
+    SECRETS_NEEDED="CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_PROJECT_NAME"
+    ;;
+  railway)
+    DEPLOY_JOB=$(cat <<'EOF'
+
+  deploy:
+    name: Deploy to Railway
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      # Uses the official Railway CLI authenticated with a project token, not
+      # OIDC - Railway does not support GitHub OIDC federation yet.
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+      - name: Deploy
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: railway up --service "${{ secrets.RAILWAY_SERVICE }}"
+EOF
+)
+    SECRETS_NEEDED="RAILWAY_TOKEN, RAILWAY_SERVICE"
+    ;;
+  render)
+    DEPLOY_JOB=$(cat <<'EOF'
+
+  deploy:
+    name: Deploy to Render
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+    steps:
+      # Render deploy hooks trigger a deploy of whatever Render already has
+      # connected/configured for this service - no checkout needed here, and
+      # no OIDC support from Render yet, so the hook URL itself is the secret.
+      - name: Trigger Render deploy hook
+        run: curl -fsSL -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+EOF
+)
+    SECRETS_NEEDED="RENDER_DEPLOY_HOOK_URL"
+    ;;
   server)
     DEPLOY_JOB=$(cat <<'EOF'
 
@@ -471,3 +603,12 @@ if [ "$DEPLOY_TARGET" != "none" ]; then
   echo "Also create a 'production' environment under Settings > Environments"
   echo "(optionally with a required reviewer) - the deploy job targets it."
 fi
+
+case "$DEPLOY_TARGET" in
+  cloudflare|railway|render)
+    echo ""
+    echo "Note: $DEPLOY_TARGET deploys with a static API token/hook URL, not"
+    echo "OIDC (that platform doesn't support GitHub OIDC federation yet)."
+    echo "Scope it as narrowly as the platform allows and rotate it periodically."
+    ;;
+esac

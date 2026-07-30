@@ -17,6 +17,9 @@
     --blue: #5b8cff;
     --orange: #ff8a5b;
     --green: #3ecf8e;
+    /* Smooth-scrolls in-page nav links (#features/#pricing) instead of an
+       instant jump - applies to the html element via :root. */
+    scroll-behavior: smooth;
   }
   * { box-sizing: border-box; }
   body {
@@ -46,6 +49,26 @@
   nav .links { display: flex; gap: 24px; align-items: center; font-size: 14px; color: var(--text-dim); }
   nav .links a:hover { color: var(--text); }
   .badge-img { height: 20px; vertical-align: middle; }
+
+  /* Hamburger trigger - a plain CSS 3-bar icon, invisible above the mobile
+     breakpoint below where nav .links is shown inline instead. */
+  .nav-toggle {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    width: 34px; height: 34px;
+    padding: 0; border: none; background: none; cursor: pointer;
+  }
+  .nav-toggle span {
+    display: block; width: 100%; height: 2px;
+    background: var(--text); border-radius: 2px;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+  }
+  /* Bars morph into an X once the menu is open, so the button also signals its own state. */
+  .nav-toggle.is-active span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .nav-toggle.is-active span:nth-child(2) { opacity: 0; }
+  .nav-toggle.is-active span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
   .hero {
     text-align: center;
@@ -117,7 +140,9 @@
   .stat .num { font-size: 24px; font-weight: 700; color: var(--blue); }
   .stat .label { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
 
-  section { padding: 20px 0 70px; }
+  /* Offsets anchor scrolling by roughly the sticky nav's height, so jumping
+     to #features/#pricing doesn't land the heading half-hidden underneath it. */
+  section { padding: 20px 0 70px; scroll-margin-top: 84px; }
   h2 { font-size: 30px; text-align: center; margin: 0 0 10px; }
   p.section-sub { text-align: center; color: var(--text-dim); max-width: 560px; margin: 0 auto 44px; }
 
@@ -190,14 +215,51 @@
   .footer-grid ul a:hover { color: var(--text); }
   .footer-bottom { border-top: 1px solid var(--border); padding-top: 20px; text-align: center; }
 
+  /* TABLET (<=900px): the desktop layout had no middle step between 3/4
+     columns and 1/2 columns, so a real tablet viewport (e.g. iPad portrait,
+     ~768px) hit the 3-column feature grid and 4-column stat bar at full
+     width and got visibly cramped. This is the fix - one column fewer each,
+     nothing collapses all the way to mobile yet. */
   @media (max-width: 900px) {
+    .hero h1 { font-size: 42px; }
+    .grid { grid-template-columns: repeat(2, 1fr); }
+    .stats { grid-template-columns: repeat(2, 1fr); }
     .footer-grid { grid-template-columns: 1fr 1fr; }
   }
-  @media (max-width: 720px) {
-    .hero h1 { font-size: 32px; }
-    .stats { grid-template-columns: repeat(2, 1fr); }
+
+  /* MOBILE (<=600px): logo shrinks to just the icon (wordmark hidden), the
+     three text links + star badge move into a dropdown panel behind a
+     hamburger button instead of trying to fit inline. */
+  @media (max-width: 600px) {
+    /* No position override needed here: nav is already position:sticky from
+       the base rule above, and sticky elements are positioning contexts too
+       (like relative), so the dropdown panel below anchors to it correctly
+       without giving up the "stays pinned while scrolling" behavior. */
+    .logo-text { display: none; }
+    .nav-toggle { display: flex; }
+
+    nav .links {
+      display: none;
+      position: absolute;
+      top: 100%; left: 0; right: 0;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-top: none;
+      border-radius: 0 0 12px 12px;
+      padding: 16px 24px 20px;
+    }
+    nav .links a { padding: 8px 0; width: 100%; }
+    nav .links.open { display: flex; } /* toggled by the script below */
+
+    .hero { padding: 64px 0 40px; }
+    .hero h1 { font-size: 30px; }
+    .hero p.sub { font-size: 16px; }
     .grid { grid-template-columns: 1fr; }
-    .footer-grid { grid-template-columns: 1fr 1fr; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .footer-grid { grid-template-columns: 1fr; }
     .terminal { font-size: 11px; }
   }
 </style>
@@ -206,8 +268,19 @@
 
 <div class="wrap">
   <nav>
-    <div class="logo"><img src="assets/logo.png" alt="" style="width:24px;height:24px;border-radius:6px;"> github-actions-setup</div>
-    <div class="links">
+    <div class="logo">
+      <img src="assets/logo.png" alt="" style="width:24px;height:24px;border-radius:6px;">
+      <!-- Wrapped in its own span so mobile can hide just the wordmark and keep the icon. -->
+      <span class="logo-text">github-actions-setup</span>
+    </div>
+
+    <!-- Hidden on desktop (nav .links shows inline there); becomes the menu
+         trigger on mobile once .links itself turns into a dropdown panel. -->
+    <button class="nav-toggle" type="button" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="nav-links">
+      <span></span><span></span><span></span>
+    </button>
+
+    <div class="links" id="nav-links">
       <a href="#features">Features</a>
       <a href="#pricing">Pricing</a>
       <a href="guide.html">Guide</a>
@@ -222,7 +295,7 @@
   <div class="wrap">
     <img src="assets/logo.png" alt="github-actions-setup" style="width:64px;height:64px;border-radius:16px;margin-bottom:20px;">
     <h1>CI/CD in <span>one command</span>,<br>not one afternoon.</h1>
-    <p class="sub">Point it at any Node, Python, or Go project. It detects the stack, writes a tested GitHub Actions workflow, and tells you exactly which secrets to add — for AWS, Vercel, or any server you SSH into.</p>
+    <p class="sub">Point it at any Node, Python, or Go project. It detects the stack, writes a tested GitHub Actions workflow, and tells you exactly which secrets to add — for AWS, Vercel, Cloudflare, Railway, Render, or any server you SSH into.</p>
     <div class="terminal"><span class="prompt">$</span> bash &lt;(curl -fsSL https://raw.githubusercontent.com/khemratechconsulting/github-actions-setup/main/skills/github-actions-setup/scripts/setup.sh)<span class="cursor"></span></div>
     <div class="cta-row">
       <a class="btn btn-primary" href="https://github.com/khemratechconsulting/github-actions-setup">View on GitHub</a>
@@ -233,7 +306,7 @@
 
 <div class="wrap">
   <div class="stats">
-    <div class="stat"><div class="num">3</div><div class="label">Deploy Targets</div></div>
+    <div class="stat"><div class="num">6</div><div class="label">Deploy Targets</div></div>
     <div class="stat"><div class="num">3</div><div class="label">Languages</div></div>
     <div class="stat"><div class="num">1</div><div class="label">Command Setup</div></div>
     <div class="stat"><div class="num">100%</div><div class="label">OSS Core</div></div>
@@ -245,9 +318,9 @@
     <p class="section-sub">Not a copy-pasted template — the defaults follow the same practices you'd expect from a senior DevOps review.</p>
     <div class="grid">
       <div class="card"><div class="icon">🔍</div><h3>Auto language detection</h3><p>Reads package.json, requirements.txt/pyproject.toml, or go.mod — no flags needed for the common case.</p></div>
-      <div class="card"><div class="icon">🔐</div><h3>OIDC over static keys</h3><p>AWS and GCP deploys authenticate via short-lived tokens, not long-lived credentials sitting in Settings.</p></div>
+      <div class="card"><div class="icon">🔐</div><h3>Honest about auth tradeoffs</h3><p>AWS authenticates via short-lived GitHub OIDC tokens. Cloudflare, Railway, Render, Vercel, and SSH deploys don't support that yet, so those use a scoped static secret instead — we tell you which is which.</p></div>
       <div class="card"><div class="icon">🚦</div><h3>Tests gate deploys</h3><p>The deploy job always depends on the test job passing — a red build can never reach production.</p></div>
-      <div class="card"><div class="icon">🌎</div><h3>Three deploy targets, free</h3><p>AWS (S3 + CloudFront), Vercel (preview + production), or any server over SSH.</p></div>
+      <div class="card"><div class="icon">🌎</div><h3>Six deploy targets, free</h3><p>AWS (S3 + CloudFront), Vercel, Cloudflare Pages, Railway, Render, or any server over SSH — with a recommended target badged for your detected stack.</p></div>
       <div class="card"><div class="icon">🤖</div><h3>Dependabot included</h3><p>Weekly dependency and GitHub Actions version updates, configured automatically.</p></div>
       <div class="card"><div class="icon">🧠</div><h3>Works as a Claude skill</h3><p>Drop it into Claude Code or Cowork and it triggers on "set up CI/CD" without you naming it.</p></div>
     </div>
@@ -258,7 +331,7 @@
     <p class="section-sub">Four steps, most of them automatic.</p>
     <div class="steps">
       <div class="step"><div class="n">1</div><div><h4>Run the script</h4><p>From your project root — one command, no config file to write by hand.</p></div></div>
-      <div class="step"><div class="n">2</div><div><h4>Pick a deploy target</h4><p>AWS, Vercel, a generic server, or tests-only if you're not ready to automate deploys yet.</p></div></div>
+      <div class="step"><div class="n">2</div><div><h4>Pick a deploy target</h4><p>AWS, Vercel, Cloudflare, Railway, Render, a generic server, or tests-only if you're not ready to automate deploys yet.</p></div></div>
       <div class="step"><div class="n">3</div><div><h4>Add the secrets it prints</h4><p>The script tells you the exact names to add under Settings → Secrets and variables → Actions.</p></div></div>
       <div class="step"><div class="n">4</div><div><h4>Push and watch it run</h4><p>Open a PR to see tests run; merge to main to see the deploy job fire.</p></div></div>
     </div>
@@ -278,7 +351,7 @@
         <a class="btn btn-secondary" href="https://github.com/khemratechconsulting/github-actions-setup">Get it on GitHub</a>
         <ul>
           <li class="main">Node / Python / Go auto-detection</li>
-          <li class="main">AWS, Vercel, or generic SSH server deploys</li>
+          <li class="main">AWS, Vercel, Cloudflare, Railway, Render, or generic SSH server deploys</li>
           <li class="main">Dependabot auto-configured</li>
           <li class="main">MIT licensed, fully open source</li>
         </ul>
@@ -294,7 +367,7 @@
           <li class="main">Everything in Free</li>
           <li class="main">Priority email support</li>
           <li class="main">Early access to new templates</li>
-          <li class="sub">AWS · Vercel · Server updates first</li>
+          <li class="sub">AWS · Vercel · Cloudflare · Railway · Render · Server updates first</li>
         </ul>
       </div>
 
@@ -374,6 +447,9 @@
         <ul>
           <li>AWS (S3 + CloudFront)</li>
           <li>Vercel</li>
+          <li>Cloudflare Pages/Workers</li>
+          <li>Railway</li>
+          <li>Render</li>
           <li>Generic SSH server</li>
           <!-- GCP Cloud Run ships with the Builder tier, currently in draft. -->
         </ul>
@@ -390,6 +466,37 @@
     <div class="footer-bottom">MIT Licensed · Built by Khemra Tech Consulting</div>
   </div>
 </footer>
+
+<script>
+  // Mobile hamburger menu: only touches state (open/closed) - the CSS above
+  // handles what "open" looks like via the .open / .is-active classes.
+  const navToggle = document.querySelector('.nav-toggle');
+  const navLinks = document.getElementById('nav-links');
+
+  function setMenuOpen(open) {
+    navLinks.classList.toggle('open', open);
+    navToggle.classList.toggle('is-active', open);
+    navToggle.setAttribute('aria-expanded', String(open));
+  }
+
+  navToggle.addEventListener('click', () => {
+    setMenuOpen(!navLinks.classList.contains('open'));
+  });
+
+  // Close after choosing a link, so the panel doesn't stay open post-navigation.
+  navLinks.querySelectorAll('a').forEach((link) => {
+    link.addEventListener('click', () => setMenuOpen(false));
+  });
+
+  // Close on outside tap/click and on Escape, standard menu-dismissal behavior.
+  document.addEventListener('click', (e) => {
+    if (!navLinks.classList.contains('open')) return;
+    if (!e.target.closest('nav')) setMenuOpen(false);
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') setMenuOpen(false);
+  });
+</script>
 
 </body>
 </html>
