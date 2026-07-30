@@ -1,6 +1,6 @@
 ---
 name: github-actions-setup
-description: Sets up automated CI/CD with GitHub Actions for a project in one pass — a test workflow that runs on every push/PR, plus a deploy workflow to AWS, Vercel, or a generic SSH server, wired together with secrets and environment protection following professional DevOps practice. Use this whenever the user wants to "set up GitHub Actions," "add CI/CD," "automate testing and deployment," "configure a github workflow," mentions .github/workflows, asks how to deploy automatically on push to main, or is starting a new project and asks how to get testing/deployment automation going — even if they don't say "GitHub Actions" by name. Also use it when a project has no automation yet and the user is preparing to ship, or when they ask for help with secrets, environments, or workflow triggers on an existing workflow file.
+description: Sets up automated CI/CD with GitHub Actions for any project in one pass. Intelligently auto-detects language (Node.js, Python, Go, Rust, Docker, Java, Ruby) and architecture (Frontend web apps vs Backend APIs/microservices). Generates production-ready workflow files for AWS, Vercel, Cloudflare, Railway, Render, or SSH servers with OIDC security and Dependabot. Can also install itself as a local IDE skill for Claude Code (.claude/), Cursor/Copilot/Gemini (.agents/), Antigravity (.agent/), or Windsurf (.windsurf/). Trigger whenever the user asks to "set up GitHub Actions," "add CI/CD," "configure a github workflow," or asks how to automate testing and deployment.
 ---
 
 # GitHub Actions Setup
