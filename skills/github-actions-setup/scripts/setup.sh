@@ -726,7 +726,19 @@ install_project_skill() {
     echo "Skill installed to $skill_dest"
     echo "Tip: Consider adding '$target_dir/' to your .gitignore if you don't want internal skill docs committed."
   else
-    echo "Could not locate source SKILL.md to install." >&2
+    # Running via remote curl pipe (curl | bash): fetch SKILL.md, scripts, and references from remote repository
+    echo "Fetching skill files from GitHub repository..."
+    local raw_base="https://raw.githubusercontent.com/khemratechconsulting/github-actions-setup/main/skills/github-actions-setup"
+    
+    mkdir -p "$skill_dest/scripts" "$skill_dest/references" "$skill_dest/assets/workflows"
+    curl -fsSL "$raw_base/SKILL.md" -o "$skill_dest/SKILL.md"
+    curl -fsSL "$raw_base/scripts/setup.sh" -o "$skill_dest/scripts/setup.sh" && chmod +x "$skill_dest/scripts/setup.sh"
+    curl -fsSL "$raw_base/references/best-practices.md" -o "$skill_dest/references/best-practices.md" 2>/dev/null || true
+    curl -fsSL "$raw_base/references/guide.md" -o "$skill_dest/references/guide.md" 2>/dev/null || true
+
+    echo ""
+    echo "Skill successfully installed to $skill_dest"
+    echo "Tip: Consider adding '$target_dir/' to your .gitignore if you don't want internal skill docs committed."
   fi
 }
 
