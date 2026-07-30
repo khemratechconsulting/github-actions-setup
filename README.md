@@ -48,7 +48,7 @@ bash <(curl -fsSL https://raw.githubusercontent.com/khemratechconsulting/github-
 
 We take script execution security seriously:
 - **Transparent Source Code:** The script is 100% open source shell script inspectable directly at [`skills/github-actions-setup/scripts/setup.sh`](skills/github-actions-setup/scripts/setup.sh).
-- **Inspect Before Execution:** You can inspect the script before running it:
+- **Inspect Source Code Before Running:** View the raw shell script line-by-line:
   ```bash
   curl -fsSL https://raw.githubusercontent.com/khemratechconsulting/github-actions-setup/main/skills/github-actions-setup/scripts/setup.sh | less
   ```
