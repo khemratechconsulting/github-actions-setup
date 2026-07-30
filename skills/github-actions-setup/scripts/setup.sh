@@ -306,12 +306,11 @@ install_project_skill() {
     echo "Tip: Consider adding '$target_dir/' to your .gitignore if you don't want internal skill docs committed."
   fi
 }
-
 # --- Default Mode: Install IDE Skill -------------------------------------
 if [ "$GENERATE_MODE" = false ] && [ -z "$DEPLOY_TARGET" ]; then
   INTERACTIVE=true
   if [ ! -t 0 ]; then
-    if [ -r /dev/tty ] && exec < /dev/tty; then
+    if [ -r /dev/tty ] && exec < /dev/tty 2>/dev/null; then
       :
     else
       INTERACTIVE=false
