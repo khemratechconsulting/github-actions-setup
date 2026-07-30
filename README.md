@@ -32,10 +32,12 @@ Point it at a project and it will:
 - **Tell you exactly what to do next** — the precise secret names to add, and which GitHub Environment to create.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/khemratechconsulting/github-actions-setup/main/skills/github-actions-setup/scripts/setup.sh | bash
+bash <(curl -fsSL https://raw.githubusercontent.com/khemratechconsulting/github-actions-setup/main/skills/github-actions-setup/scripts/setup.sh)
 ```
 
 (Or run it from a local clone: `bash skills/github-actions-setup/scripts/setup.sh`.)
+
+This uses process substitution (`bash <(...)`) instead of the more common `curl ... | bash`. Piping straight into `bash` makes stdin the script's own source rather than your keyboard, so the script's interactive prompts can't read your answers — `bash <(...)` keeps your terminal attached to stdin, so prompts work normally. The script also has a `/dev/tty` fallback and non-interactive flags (`--deploy=`, `--lang=`, `--force`) if you'd rather use the plain pipe.
 
 ## Using it as a Claude skill
 

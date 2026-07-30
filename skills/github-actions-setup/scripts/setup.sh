@@ -5,6 +5,16 @@
 # Usage:
 #   ./setup.sh                    interactive prompts
 #   ./setup.sh --deploy=aws       non-interactive (aws | vercel | server | none)
+#   ./setup.sh --lang=node        skip language auto-detection (node | python | go)
+#   ./setup.sh --force            overwrite an existing workflow file without asking
+#
+# Recommended ways to run this remotely (see README for why this matters):
+#   bash <(curl -fsSL <raw-url>)
+#   bash -c "$(curl -fsSL <raw-url>)"
+# Both keep your real terminal attached to stdin, so the prompts below work.
+# Piping straight into bash (`curl ... | bash`) still works for the fully
+# non-interactive case (pass --deploy=/--lang=/--force), but interactive
+# prompts fall back to /dev/tty automatically - see the block below.
 #
 # Run this from your project root. It detects your project's language from
 # files already in the directory (package.json -> Node, requirements.txt /
@@ -18,13 +28,40 @@ WORKFLOW_DIR=".github/workflows"
 WORKFLOW_FILE="$WORKFLOW_DIR/ci-cd.yml"
 DEPENDABOT_FILE=".github/dependabot.yml"
 DEPLOY_TARGET=""
+LANG_OVERRIDE=""
+FORCE=false
 
 for arg in "$@"; do
   case $arg in
     --deploy=*) DEPLOY_TARGET="${arg#*=}" ;;
+    --lang=*) LANG_OVERRIDE="${arg#*=}" ;;
+    --force) FORCE=true ;;
     *) echo "Unknown argument: $arg" >&2; exit 1 ;;
   esac
 done
+
+# --- stdin/tty handling -------------------------------------------------
+# When this script runs via `curl ... | bash`, bash's stdin (fd 0) is the
+# pipe carrying the script's own source - not your terminal. Any `read`
+# below would read from that pipe, find it already at EOF, and return
+# immediately with an empty value instead of waiting for a keypress. That's
+# the "Invalid choice" you see with no visible pause: `read` got "" back,
+# it matched no case, and the script exited before you could type anything.
+#
+# Fix: if stdin isn't a terminal but a real one is reachable at /dev/tty,
+# redirect our stdin there for the rest of the script, so every `read`
+# below waits on your actual keyboard again. If there's truly no terminal
+# available (CI runners, some containers), INTERACTIVE is set to false and
+# every prompt below falls back to requiring the matching flag instead of
+# hanging or silently choosing wrong.
+INTERACTIVE=true
+if [ ! -t 0 ]; then
+  if [ -r /dev/tty ] && exec < /dev/tty; then
+    :
+  else
+    INTERACTIVE=false
+  fi
+fi
 
 detect_language() {
   if [ -f "package.json" ]; then echo "node"
@@ -34,39 +71,65 @@ detect_language() {
   fi
 }
 
-LANG_DETECTED=$(detect_language)
-echo "Detected project language: $LANG_DETECTED"
+if [ -n "$LANG_OVERRIDE" ]; then
+  LANG_DETECTED="$LANG_OVERRIDE"
+  echo "Using language: $LANG_DETECTED (from --lang)"
+else
+  LANG_DETECTED=$(detect_language)
+  echo "Detected project language: $LANG_DETECTED"
+fi
 
 if [ "$LANG_DETECTED" = "unknown" ]; then
   echo "Could not auto-detect a language from package.json / requirements.txt / pyproject.toml / go.mod."
-  read -rp "Enter language to use for the test job [node/python/go] (default: node): " LANG_DETECTED
-  LANG_DETECTED=${LANG_DETECTED:-node}
+  if [ "$INTERACTIVE" = true ]; then
+    read -rp "Enter language to use for the test job [node/python/go] (default: node): " LANG_DETECTED
+    LANG_DETECTED=${LANG_DETECTED:-node}
+  else
+    echo "No terminal available to ask - defaulting to node." >&2
+    echo "Pass --lang=node|python|go next time to be explicit." >&2
+    LANG_DETECTED="node"
+  fi
 fi
 
 if [ -z "$DEPLOY_TARGET" ]; then
-  echo ""
-  echo "Where should this project deploy to?"
-  echo "  1) AWS (S3 + CloudFront)"
-  echo "  2) Vercel"
-  echo "  3) Generic server (SSH)"
-  echo "  4) None (tests only)"
-  read -rp "Choose [1-4]: " choice
-  case $choice in
-    1) DEPLOY_TARGET="aws" ;;
-    2) DEPLOY_TARGET="vercel" ;;
-    3) DEPLOY_TARGET="server" ;;
-    4) DEPLOY_TARGET="none" ;;
-    *) echo "Invalid choice" >&2; exit 1 ;;
-  esac
+  if [ "$INTERACTIVE" = true ]; then
+    echo ""
+    echo "Where should this project deploy to?"
+    echo "  1) AWS (S3 + CloudFront)"
+    echo "  2) Vercel"
+    echo "  3) Generic server (SSH)"
+    echo "  4) None (tests only)"
+    read -rp "Choose [1-4]: " choice
+    case $choice in
+      1) DEPLOY_TARGET="aws" ;;
+      2) DEPLOY_TARGET="vercel" ;;
+      3) DEPLOY_TARGET="server" ;;
+      4) DEPLOY_TARGET="none" ;;
+      *) echo "Invalid choice" >&2; exit 1 ;;
+    esac
+  else
+    echo "No terminal available to prompt for a deploy target." >&2
+    echo "Re-run with --deploy=aws|vercel|server|none, e.g.:" >&2
+    echo '  curl -fsSL <raw-url> | bash -s -- --deploy=vercel' >&2
+    exit 1
+  fi
 fi
 
 mkdir -p "$WORKFLOW_DIR"
 
 if [ -f "$WORKFLOW_FILE" ]; then
-  read -rp "$WORKFLOW_FILE already exists. Overwrite? [y/N]: " overwrite
-  if [[ ! "$overwrite" =~ ^[Yy]$ ]]; then
-    echo "Aborted. No files changed."
-    exit 0
+  if [ "$FORCE" = true ]; then
+    : # overwrite without asking
+  elif [ "$INTERACTIVE" = true ]; then
+    read -rp "$WORKFLOW_FILE already exists. Overwrite? [y/N]: " overwrite
+    if [[ ! "$overwrite" =~ ^[Yy]$ ]]; then
+      echo "Aborted. No files changed."
+      exit 0
+    fi
+  else
+    echo "$WORKFLOW_FILE already exists and no terminal is available to confirm overwrite." >&2
+    echo "Re-run with --force to overwrite non-interactively." >&2
+    exit 1
   fi
 fi
 
