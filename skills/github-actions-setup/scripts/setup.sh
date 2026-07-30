@@ -177,6 +177,23 @@ if [ "$VALIDATE_MODE" = true ]; then
   exit 0
 fi
 
+# --- Skill Installer Mode ------------------------------------------------
+# When --install-skill is passed, install the skill files directly into the
+# project's IDE skill directory (.agents/, .claude/, .void/, etc.) and exit.
+# Does NOT ask for deploy targets or generate workflow files.
+if [ "$INSTALL_SKILL" = true ]; then
+  INTERACTIVE=true
+  if [ ! -t 0 ]; then
+    if [ -r /dev/tty ] && exec < /dev/tty; then
+      :
+    else
+      INTERACTIVE=false
+    fi
+  fi
+  install_project_skill
+  exit 0
+fi
+
 # --- stdin/tty handling -------------------------------------------------
 # When this script runs via `curl ... | bash`, bash's stdin (fd 0) is the
 # pipe carrying the script's own source - not your terminal. Any `read`
@@ -634,21 +651,6 @@ esac
 # Opt-in installation into project-level AI assistant skill directories.
 # Never runs silently in non-interactive mode unless --install-skill is passed.
 install_project_skill() {
-  local do_install=false
-  if [ "$INSTALL_SKILL" = true ]; then
-    do_install=true
-  elif [ "$INTERACTIVE" = true ]; then
-    echo ""
-    read -rp "Install github-actions-setup as a local project skill? [y/N]: " install_choice
-    if [[ "$install_choice" =~ ^[Yy]$ ]]; then
-      do_install=true
-    fi
-  fi
-
-  if [ "$do_install" = false ]; then
-    return 0
-  fi
-
   # Determine target directory based on existing markers or prompt
   local target_dir=""
   local detected_dirs=()
@@ -779,6 +781,4 @@ install_project_skill() {
     echo "Tip: Consider adding '$target_dir/' to your .gitignore if you don't want internal skill docs committed."
   fi
 }
-
-install_project_skill
 
