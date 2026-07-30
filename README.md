@@ -1,13 +1,18 @@
 <div align="center">
 
+![github-actions-setup](docs/assets/hero-banner.png)
+
 # github-actions-setup
 
 **A Claude skill that sets up automated CI/CD for any project in one command.**
 
-Auto-detects your language, writes a tested GitHub Actions workflow, and wires up secrets, environments, and dependency updates — the way a careful senior engineer would, not a copy-pasted tutorial.
+![Release](https://img.shields.io/badge/release-v1.0.0-5b8cff?style=for-the-badge)
+![Deploy Targets](https://img.shields.io/badge/deploy_targets-3-ff8a5b?style=for-the-badge)
+![Languages](https://img.shields.io/badge/languages-node%20%7C%20python%20%7C%20go-3ecf8e?style=for-the-badge)
+![License](https://img.shields.io/badge/license-MIT-e8e9ed?style=for-the-badge)
+![Stars](https://img.shields.io/github/stars/khemratechconsulting/github-actions-setup?style=for-the-badge&color=5b8cff)
 
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-![Stars](https://img.shields.io/github/stars/khemratechconsulting/github-actions-setup?style=social)
+Auto-detects your language, writes a tested GitHub Actions workflow, and wires up secrets, environments, and dependency updates — the way a careful senior engineer would, not a copy-pasted tutorial.
 
 [Website](https://khemratechconsulting.github.io/github-actions-setup) · [Setup Guide](docs/setup-guide.md) · [Pro](https://khemratechconsulting.github.io/github-actions-setup#pricing)
 
