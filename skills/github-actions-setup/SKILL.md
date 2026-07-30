@@ -22,6 +22,16 @@ For a real project directory, the cleanest approach is to run `scripts/setup.sh`
 
 Prefer running the script over hand-writing YAML when you have shell access to the user's project — it guarantees valid, tested output and takes one command.
 
+## Installing as a local project skill for AI IDEs & Agents
+
+`scripts/setup.sh` includes an opt-in skill installer (`--install-skill` or via interactive prompt). It auto-detects existing local IDE skill root directories in the current project:
+- `.agents/skills/github-actions-setup` (Cursor, Copilot, Gemini CLI, Amp, Cline, Warp)
+- `.agent/skills/github-actions-setup` (Antigravity)
+- `.claude/skills/github-actions-setup` (Claude Code)
+- `.windsurf/skills/github-actions-setup` (Windsurf)
+
+When running with `--install-skill`, it copies `SKILL.md`, `references/`, and `scripts/` directly into the detected directory so AI assistants running inside the user's project automatically gain the CI/CD setup skill. Recommend adding the installed skill root (e.g., `.agents/skills/`) to `.gitignore` if the user prefers not to commit internal skill documentation into their project history.
+
 ## Auditing an existing workflow
 
 If the user already has a `.github/workflows/*.yml` file (whether this script wrote it or not) and asks you to review it, don't just eyeball the YAML — run `scripts/setup.sh --validate` from the project root (or `--validate=path/to/file.yml` for a specific file). It checks for the same things a careful reviewer would: a missing top-level `permissions:` block, a deploy-looking job with no `needs:` gate (so it can run even if tests failed), a deploy-looking job with no `if:` restricting it to a branch/event (so it can fire from any PR, including forks), and actions pinned to a mutable `@main`/`@master` tag instead of a version or SHA. Add `--strict` if the user wants a non-zero exit code for CI/pre-push use. This is a real check against real files — prefer it over guessing from a pasted snippet, since it won't miss something a quick read would.

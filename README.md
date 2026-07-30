@@ -40,9 +40,25 @@ bash <(curl -fsSL https://raw.githubusercontent.com/khemratechconsulting/github-
 
 This uses process substitution (`bash <(...)`) instead of the more common `curl ... | bash`. Piping straight into `bash` makes stdin the script's own source rather than your keyboard, so the script's interactive prompts can't read your answers — `bash <(...)` keeps your terminal attached to stdin, so prompts work normally. The script also has a `/dev/tty` fallback and non-interactive flags (`--deploy=`, `--lang=`, `--force`) if you'd rather use the plain pipe.
 
-## Using it as a Claude skill
+## Using it as a Claude skill or IDE assistant skill
 
-This repo is also a [Claude skill](https://docs.claude.com/en/docs/claude-code/skills) — add it to Claude Code or Cowork and it triggers automatically whenever you ask to "set up GitHub Actions," "add CI/CD," or similar. See `skills/github-actions-setup/SKILL.md`.
+This repo works as a skill for Claude Code, Cursor, Windsurf, Antigravity, and other agentic coding IDEs — triggering automatically whenever you ask to "set up GitHub Actions," "add CI/CD," or similar.
+
+To install `github-actions-setup` as a local skill inside your project, run:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/khemratechconsulting/github-actions-setup/main/skills/github-actions-setup/scripts/setup.sh) --install-skill
+```
+
+It auto-detects your IDE's skill directory:
+- `.agents/skills/` (Cursor, GitHub Copilot, Gemini CLI, Amp, Cline, Warp)
+- `.agent/skills/` (Antigravity)
+- `.claude/skills/` (Claude Code)
+- `.windsurf/skills/` (Windsurf)
+
+*Tip:* Add the skill directory to your project's `.gitignore` if you prefer not to commit internal skill documentation into your repo history.
+
+See `skills/github-actions-setup/SKILL.md` for full trigger details.
 
 ## What's included (free, MIT-licensed)
 

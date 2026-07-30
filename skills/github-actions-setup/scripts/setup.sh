@@ -44,6 +44,7 @@ DEPENDABOT_FILE=".github/dependabot.yml"
 DEPLOY_TARGET=""
 LANG_OVERRIDE=""
 FORCE=false
+INSTALL_SKILL=false
 VALIDATE_MODE=false
 VALIDATE_TARGET=""
 STRICT=false
@@ -53,6 +54,7 @@ for arg in "$@"; do
     --deploy=*) DEPLOY_TARGET="${arg#*=}" ;;
     --lang=*) LANG_OVERRIDE="${arg#*=}" ;;
     --force) FORCE=true ;;
+    --install-skill) INSTALL_SKILL=true ;;
     --validate) VALIDATE_MODE=true ;;
     --validate=*) VALIDATE_MODE=true; VALIDATE_TARGET="${arg#*=}" ;;
     --strict) STRICT=true ;;
@@ -96,7 +98,6 @@ validate_workflow_file() {
   echo "Checking $file"
 
   if grep -qE '^permissions:' "$file"; then
-    has_permissions=true
     echo "  OK    explicit top-level permissions: block found"
   else
     echo "  WARN  no top-level permissions: block - relying on the default (broader) token scope"
@@ -612,3 +613,106 @@ case "$DEPLOY_TARGET" in
     echo "Scope it as narrowly as the platform allows and rotate it periodically."
     ;;
 esac
+
+# --- IDE / Agent Skill Installer -----------------------------------------
+# Opt-in installation into project-level AI assistant skill directories.
+# Never runs silently in non-interactive mode unless --install-skill is passed.
+install_project_skill() {
+  local do_install=false
+  if [ "$INSTALL_SKILL" = true ]; then
+    do_install=true
+  elif [ "$INTERACTIVE" = true ]; then
+    echo ""
+    read -rp "Install github-actions-setup as a local project skill? [y/N]: " install_choice
+    if [[ "$install_choice" =~ ^[Yy]$ ]]; then
+      do_install=true
+    fi
+  fi
+
+  if [ "$do_install" = false ]; then
+    return 0
+  fi
+
+  # Determine target directory based on existing markers or prompt
+  local target_dir=""
+  local detected_dirs=()
+
+  [ -d ".claude/skills" ] && detected_dirs+=(".claude/skills")
+  [ -d ".windsurf/skills" ] && detected_dirs+=(".windsurf/skills")
+  [ -d ".agent/skills" ] && detected_dirs+=(".agent/skills")
+  [ -d ".agents/skills" ] && detected_dirs+=(".agents/skills")
+
+  if [ ${#detected_dirs[@]} -eq 1 ]; then
+    target_dir="${detected_dirs[0]}"
+  elif [ ${#detected_dirs[@]} -gt 1 ]; then
+    if [ "$INTERACTIVE" = true ]; then
+      echo ""
+      echo "Multiple IDE skill directories found:"
+      local idx=1
+      for d in "${detected_dirs[@]}"; do
+        echo "  $idx) $d"
+        idx=$((idx + 1))
+      done
+      read -rp "Choose target [1-${#detected_dirs[@]}]: " sel
+      if [[ "$sel" =~ ^[0-9]+$ ]] && [ "$sel" -ge 1 ] && [ "$sel" -le "${#detected_dirs[@]}" ]; then
+        target_dir="${detected_dirs[$((sel - 1))]}"
+      else
+        target_dir="${detected_dirs[0]}"
+      fi
+    else
+      target_dir="${detected_dirs[0]}"
+    fi
+  else
+    if [ "$INTERACTIVE" = true ]; then
+      echo ""
+      echo "Select IDE skill root format to install to:"
+      echo "  1) .agents/skills  (Cursor, Copilot, Gemini CLI, Amp, Cline, Warp)"
+      echo "  2) .agent/skills   (Antigravity)"
+      echo "  3) .claude/skills  (Claude Code)"
+      echo "  4) .windsurf/skills (Windsurf)"
+      read -rp "Choose [1-4] (default: 1): " choice
+      case $choice in
+        1|"") target_dir=".agents/skills" ;;
+        2) target_dir=".agent/skills" ;;
+        3) target_dir=".claude/skills" ;;
+        4) target_dir=".windsurf/skills" ;;
+        *) target_dir=".agents/skills" ;;
+      esac
+    else
+      target_dir=".agents/skills"
+    fi
+  fi
+
+  local skill_dest="$target_dir/github-actions-setup"
+  if [ -d "$skill_dest" ] && [ "$FORCE" = false ]; then
+    if [ "$INTERACTIVE" = true ]; then
+      read -rp "Skill at $skill_dest already exists. Overwrite? [y/N]: " ow_skill
+      if [[ ! "$ow_skill" =~ ^[Yy]$ ]]; then
+        echo "Skipped skill installation."
+        return 0
+      fi
+    else
+      echo "Skill at $skill_dest already exists. Pass --force to overwrite." >&2
+      return 0
+    fi
+  fi
+
+  # Find origin skill directory
+  local script_dir
+  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  local skill_src
+  skill_src="$(cd "$script_dir/.." && pwd)"
+
+  mkdir -p "$skill_dest"
+  if [ -f "$skill_src/SKILL.md" ]; then
+    cp -R "$skill_src/"* "$skill_dest/" 2>/dev/null || cp -r "$skill_src/"* "$skill_dest/"
+    echo ""
+    echo "Skill installed to $skill_dest"
+    echo "Tip: Consider adding '$target_dir/' to your .gitignore if you don't want internal skill docs committed."
+  else
+    echo "Could not locate source SKILL.md to install." >&2
+  fi
+}
+
+install_project_skill
+
