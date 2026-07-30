@@ -105,7 +105,7 @@
 
   .stats {
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 1px;
     background: var(--border);
     border: 1px solid var(--border);
@@ -149,7 +149,7 @@
 
   .pricing-toggle { text-align: center; margin-bottom: 40px; color: var(--text-dim); font-size: 13px; }
 
-  .pricing { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; align-items: start; }
+  .pricing { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 300px)); gap: 18px; align-items: start; justify-content: center; }
   .price-card {
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -158,8 +158,8 @@
     position: relative;
   }
   .price-card.pro { border-color: var(--orange); }
-  .price-card.pro::before {
-    content: "MOST POWERFUL";
+  .price-card[data-badge]::before {
+    content: attr(data-badge);
     position: absolute; top: -11px; left: 22px;
     background: var(--orange); color: #06070b;
     font-size: 10px; font-weight: 700; letter-spacing: 0.04em;
@@ -191,14 +191,12 @@
   .footer-bottom { border-top: 1px solid var(--border); padding-top: 20px; text-align: center; }
 
   @media (max-width: 900px) {
-    .pricing { grid-template-columns: repeat(2, 1fr); }
     .footer-grid { grid-template-columns: 1fr 1fr; }
   }
   @media (max-width: 720px) {
     .hero h1 { font-size: 32px; }
-    .stats { grid-template-columns: repeat(3, 1fr); }
+    .stats { grid-template-columns: repeat(2, 1fr); }
     .grid { grid-template-columns: 1fr; }
-    .pricing { grid-template-columns: 1fr; }
     .footer-grid { grid-template-columns: 1fr 1fr; }
     .terminal { font-size: 11px; }
   }
@@ -238,9 +236,8 @@
     <div class="stat"><div class="num">3</div><div class="label">Deploy Targets</div></div>
     <div class="stat"><div class="num">3</div><div class="label">Languages</div></div>
     <div class="stat"><div class="num">1</div><div class="label">Command Setup</div></div>
-    <div class="stat"><div class="num">4</div><div class="label">Pricing Tiers</div></div>
-    <div class="stat"><div class="num">7</div><div class="label">Pro Templates</div></div>
     <div class="stat"><div class="num">100%</div><div class="label">OSS Core</div></div>
+    <!-- Pricing Tiers / Pro Templates stats return once the paid tiers relaunch below. -->
   </div>
 
   <section id="features">
@@ -268,24 +265,46 @@
   </section>
 
   <section id="pricing">
-    <h2>Free core, paid power-ups</h2>
-    <p class="section-sub">The free tier is a complete, production-ready toolkit on its own. Each paid tier stacks everything from the one before it.</p>
+    <h2>Free core, one paid tier</h2>
+    <p class="section-sub">The free tier is a complete, production-ready toolkit on its own. Supporter is a way to back the project — more tiers are on the roadmap.</p>
     <div class="pricing-toggle">Billed monthly · cancel anytime</div>
     <div class="pricing">
 
       <div class="price-card">
-        <p class="tier-name">Starter</p>
-        <p class="tier-tagline">For solo projects</p>
-        <div class="price">$2.77<span> / month</span></div>
-        <div class="billed">Billed monthly</div>
-        <a class="btn btn-secondary" href="pro.html?tier=starter">Get Starter</a>
+        <p class="tier-name">Free</p>
+        <p class="tier-tagline">The complete OSS core</p>
+        <div class="price">$0</div>
+        <div class="billed">No account needed</div>
+        <a class="btn btn-secondary" href="https://github.com/khemratechconsulting/github-actions-setup">Get it on GitHub</a>
         <ul>
-          <li class="main">Everything in the free OSS core</li>
+          <li class="main">Node / Python / Go auto-detection</li>
+          <li class="main">AWS, Vercel, or generic SSH server deploys</li>
+          <li class="main">Dependabot auto-configured</li>
+          <li class="main">MIT licensed, fully open source</li>
+        </ul>
+      </div>
+
+      <div class="price-card pro" data-badge="SUPPORT THE PROJECT">
+        <p class="tier-name">Supporter</p>
+        <p class="tier-tagline">Back the project</p>
+        <div class="price">$1.99<span> / month</span></div>
+        <div class="billed">Billed monthly · cancel anytime</div>
+        <a class="btn btn-primary" href="pro.html?tier=supporter">Get Supporter</a>
+        <ul>
+          <li class="main">Everything in Free</li>
           <li class="main">Priority email support</li>
           <li class="main">Early access to new templates</li>
           <li class="sub">AWS · Vercel · Server updates first</li>
         </ul>
       </div>
+
+      <!--
+        Draft tiers — Builder ($4.77), Shipper ($7.77), Pro ($9.77) — are
+        built and tested (see github-actions-setup-pro.zip / docs/pro.html)
+        but intentionally not offered yet. Plan is to introduce them once
+        the project has a real user base rather than launch with four
+        untested price points at once. Uncomment this block plus the
+        matching entries in docs/pro.html's TIERS object to relaunch them.
 
       <div class="price-card">
         <p class="tier-name">Builder</p>
@@ -294,7 +313,7 @@
         <div class="billed">Billed monthly</div>
         <a class="btn btn-secondary" href="pro.html?tier=builder">Get Builder</a>
         <ul>
-          <li class="main">Everything in Starter</li>
+          <li class="main">Everything in Supporter</li>
           <li class="main">Google Cloud Run deploy</li>
           <li class="sub">Workload Identity Federation, no static keys</li>
           <li class="main">Docker / GHCR multi-arch builds</li>
@@ -316,7 +335,7 @@
         </ul>
       </div>
 
-      <div class="price-card pro">
+      <div class="price-card pro" data-badge="MOST POWERFUL">
         <p class="tier-name">Pro</p>
         <p class="tier-tagline">Most powerful</p>
         <div class="price">$9.77<span> / month</span></div>
@@ -329,6 +348,7 @@
           <li class="sub">Direct email line, skip the queue</li>
         </ul>
       </div>
+      -->
 
     </div>
   </section>
@@ -355,7 +375,7 @@
           <li>AWS (S3 + CloudFront)</li>
           <li>Vercel</li>
           <li>Generic SSH server</li>
-          <li>GCP Cloud Run (Pro)</li>
+          <!-- GCP Cloud Run ships with the Builder tier, currently in draft. -->
         </ul>
       </div>
       <div>
