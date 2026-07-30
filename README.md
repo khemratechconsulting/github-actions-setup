@@ -56,7 +56,11 @@ It auto-detects your IDE's skill directory:
 - `.agents/skills/` (Cursor, GitHub Copilot, Gemini CLI, Amp, Cline, Warp)
 - `.agent/skills/` (Antigravity)
 - `.claude/skills/` (Claude Code)
+- `.void/skills/` (Void IDE)
 - `.windsurf/skills/` (Windsurf)
+- `.kiro/skills/` (Kiro)
+- `.codex/skills/` (Codex / OpenAI)
+- `.qoder/skills/` (Qoder)
 
 ### How to use the skill after installation
 

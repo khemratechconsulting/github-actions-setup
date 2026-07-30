@@ -655,6 +655,10 @@ install_project_skill() {
 
   [ -d ".claude/skills" ] && detected_dirs+=(".claude/skills")
   [ -d ".windsurf/skills" ] && detected_dirs+=(".windsurf/skills")
+  [ -d ".void/skills" ] && detected_dirs+=(".void/skills")
+  [ -d ".kiro/skills" ] && detected_dirs+=(".kiro/skills")
+  [ -d ".codex/skills" ] && detected_dirs+=(".codex/skills")
+  [ -d ".qoder/skills" ] && detected_dirs+=(".qoder/skills")
   [ -d ".agent/skills" ] && detected_dirs+=(".agent/skills")
   [ -d ".agents/skills" ] && detected_dirs+=(".agents/skills")
 
@@ -682,16 +686,24 @@ install_project_skill() {
     if [ "$INTERACTIVE" = true ]; then
       echo ""
       echo "Select IDE skill root format to install to:"
-      echo "  1) .agents/skills  (Cursor, Copilot, Gemini CLI, Amp, Cline, Warp)"
+      echo "  1) .agents/skills  (Cursor, GitHub Copilot, Gemini CLI, Amp, Cline, Warp)"
       echo "  2) .agent/skills   (Antigravity)"
       echo "  3) .claude/skills  (Claude Code)"
-      echo "  4) .windsurf/skills (Windsurf)"
-      read -rp "Choose [1-4] (default: 1): " choice
+      echo "  4) .void/skills    (Void IDE)"
+      echo "  5) .windsurf/skills (Windsurf)"
+      echo "  6) .kiro/skills    (Kiro)"
+      echo "  7) .codex/skills   (Codex / OpenAI)"
+      echo "  8) .qoder/skills   (Qoder)"
+      read -rp "Choose [1-8] (default: 1): " choice
       case $choice in
         1|"") target_dir=".agents/skills" ;;
         2) target_dir=".agent/skills" ;;
         3) target_dir=".claude/skills" ;;
-        4) target_dir=".windsurf/skills" ;;
+        4) target_dir=".void/skills" ;;
+        5) target_dir=".windsurf/skills" ;;
+        6) target_dir=".kiro/skills" ;;
+        7) target_dir=".codex/skills" ;;
+        8) target_dir=".qoder/skills" ;;
         *) target_dir=".agents/skills" ;;
       esac
     else
