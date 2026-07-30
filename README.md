@@ -34,20 +34,12 @@ Point it at a project and it will:
 - **Tell you exactly what to do next** — the precise secret names to add, and which GitHub Environment to create.
 - **Audit an existing workflow** — `--validate` checks any `.github/workflows/*.yml` for missing `permissions:`, ungated deploy jobs, and unpinned `@main`/`@master` actions; `--strict` exits non-zero for CI use.
 
-### ⚡ Short & Clean Installation
+### ⚡ Simple 1-Command Skill Installation
 
-#### Option 1: Standard One-Liner
-```bash
-npx github-actions-setup --install-skill
-```
-*or using clean curl redirect:*
-```bash
-bash <(curl -fsSL https://khemratechconsulting.github.io/github-actions-setup/setup.sh) --install-skill
-```
+Run this command in your project terminal to install the CI/CD skill into your IDE:
 
-#### Option 2: Full Source URL
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/khemratechconsulting/github-actions-setup/main/skills/github-actions-setup/scripts/setup.sh) --install-skill
+bash <(curl -fsSL https://raw.githubusercontent.com/khemratechconsulting/github-actions-setup/main/skills/github-actions-setup/scripts/setup.sh)
 ```
 
 ---

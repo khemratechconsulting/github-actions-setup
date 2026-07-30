@@ -44,7 +44,7 @@ DEPENDABOT_FILE=".github/dependabot.yml"
 DEPLOY_TARGET=""
 LANG_OVERRIDE=""
 FORCE=false
-INSTALL_SKILL=false
+GENERATE_MODE=false
 VALIDATE_MODE=false
 VALIDATE_TARGET=""
 STRICT=false
@@ -54,7 +54,7 @@ for arg in "$@"; do
     --deploy=*) DEPLOY_TARGET="${arg#*=}" ;;
     --lang=*) LANG_OVERRIDE="${arg#*=}" ;;
     --force) FORCE=true ;;
-    --install-skill) INSTALL_SKILL=true ;;
+    --generate) GENERATE_MODE=true ;;
     --validate) VALIDATE_MODE=true ;;
     --validate=*) VALIDATE_MODE=true; VALIDATE_TARGET="${arg#*=}" ;;
     --strict) STRICT=true ;;
@@ -177,11 +177,11 @@ if [ "$VALIDATE_MODE" = true ]; then
   exit 0
 fi
 
-# --- Skill Installer Mode ------------------------------------------------
-# When --install-skill is passed, install the skill files directly into the
-# project's IDE skill directory (.agents/, .claude/, .void/, etc.) and exit.
-# Does NOT ask for deploy targets or generate workflow files.
-if [ "$INSTALL_SKILL" = true ]; then
+# --- Default Mode: Install IDE Skill -------------------------------------
+# By default, executing setup.sh installs the skill into the local project IDE
+# directory (.agents/, .claude/, .void/, etc.). It does NOT ask for deploy options
+# or generate workflow files unless explicitly requested with --deploy or --generate.
+if [ "$GENERATE_MODE" = false ] && [ -z "$DEPLOY_TARGET" ]; then
   INTERACTIVE=true
   if [ ! -t 0 ]; then
     if [ -r /dev/tty ] && exec < /dev/tty; then
