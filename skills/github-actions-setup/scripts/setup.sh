@@ -7,6 +7,12 @@
 #   ./setup.sh --deploy=aws       non-interactive (aws | vercel | server | none)
 #   ./setup.sh --lang=node        skip language auto-detection (node | python | go)
 #   ./setup.sh --force            overwrite an existing workflow file without asking
+#   ./setup.sh --validate         audit existing .github/workflows/*.yml instead of
+#                                 generating anything (works on ANY workflow file,
+#                                 not just ones this script wrote)
+#   ./setup.sh --validate=path/to/file.yml   audit just that one file
+#   ./setup.sh --validate --strict           exit non-zero if any warnings are found
+#                                 (useful as a CI step or pre-push hook)
 #
 # Recommended ways to run this remotely (see README for why this matters):
 #   bash <(curl -fsSL <raw-url>)
@@ -30,15 +36,138 @@ DEPENDABOT_FILE=".github/dependabot.yml"
 DEPLOY_TARGET=""
 LANG_OVERRIDE=""
 FORCE=false
+VALIDATE_MODE=false
+VALIDATE_TARGET=""
+STRICT=false
 
 for arg in "$@"; do
   case $arg in
     --deploy=*) DEPLOY_TARGET="${arg#*=}" ;;
     --lang=*) LANG_OVERRIDE="${arg#*=}" ;;
     --force) FORCE=true ;;
+    --validate) VALIDATE_MODE=true ;;
+    --validate=*) VALIDATE_MODE=true; VALIDATE_TARGET="${arg#*=}" ;;
+    --strict) STRICT=true ;;
     *) echo "Unknown argument: $arg" >&2; exit 1 ;;
   esac
 done
+
+# --- validate mode -------------------------------------------------------
+# Audits existing workflow YAML for the same anti-patterns this script's own
+# generated workflows avoid: no explicit `permissions:` (relying on the
+# broader default token scope), a deploy-looking job with no `needs:` gate
+# (it can run even if tests failed), a deploy-looking job with no `if:`
+# restricting it to a specific branch/event (it can fire from any PR,
+# including forks), and actions pinned to a mutable `@main`/`@master` tag
+# instead of a version or commit SHA (a known GitHub Actions supply-chain
+# risk - the tag's contents can change under you). This runs independently
+# of everything else in this script and works on any workflow file, not
+# just ones this script generated, so it's safe to run as a standalone
+# check on a repo you didn't set up with this tool.
+validate_workflow_file() {
+  local file="$1"
+  local warnings=0
+  local has_permissions=false
+  local current_job=""
+  local job_is_deploy=false
+  local job_has_needs=false
+  local job_has_if=false
+
+  report_job() {
+    if [ "$job_is_deploy" = true ]; then
+      if [ "$job_has_needs" = false ]; then
+        echo "  WARN  job '$current_job' looks like a deploy job but has no needs: gate - it can run even if tests fail"
+        warnings=$((warnings + 1))
+      fi
+      if [ "$job_has_if" = false ]; then
+        echo "  WARN  job '$current_job' looks like a deploy job but has no if: condition - it may run from any branch or PR, including forks"
+        warnings=$((warnings + 1))
+      fi
+    fi
+  }
+
+  echo "Checking $file"
+
+  if grep -qE '^permissions:' "$file"; then
+    has_permissions=true
+    echo "  OK    explicit top-level permissions: block found"
+  else
+    echo "  WARN  no top-level permissions: block - relying on the default (broader) token scope"
+    warnings=$((warnings + 1))
+  fi
+
+  local unpinned_count=0
+  while IFS= read -r match_line; do
+    [ -z "$match_line" ] && continue
+    echo "  WARN  ${match_line# } <- pinned to a mutable @main/@master tag, not a version tag or commit SHA"
+    warnings=$((warnings + 1))
+    unpinned_count=$((unpinned_count + 1))
+  done < <(grep -nE 'uses:[[:space:]]*[^[:space:]]+@(main|master)\b' "$file" || true)
+  if [ "$unpinned_count" -eq 0 ]; then
+    echo "  OK    all actions pinned to a version tag or SHA"
+  fi
+
+  while IFS= read -r line; do
+    if [[ "$line" =~ ^\ \ ([A-Za-z0-9_-]+):[[:space:]]*$ ]]; then
+      report_job
+      current_job="${BASH_REMATCH[1]}"
+      job_is_deploy=false
+      job_has_needs=false
+      job_has_if=false
+      if [[ "$current_job" =~ (deploy|publish|release) ]]; then
+        job_is_deploy=true
+      fi
+    elif [[ "$line" =~ needs: ]]; then
+      job_has_needs=true
+    elif [[ "$line" =~ ^\ \ \ \ if: ]]; then
+      job_has_if=true
+    fi
+  done < "$file"
+  report_job
+
+  echo ""
+  return "$warnings"
+}
+
+if [ "$VALIDATE_MODE" = true ]; then
+  TARGETS=()
+  if [ -n "$VALIDATE_TARGET" ]; then
+    if [ ! -f "$VALIDATE_TARGET" ]; then
+      echo "File not found: $VALIDATE_TARGET" >&2
+      exit 1
+    fi
+    TARGETS=("$VALIDATE_TARGET")
+  else
+    shopt -s nullglob
+    TARGETS=(.github/workflows/*.yml .github/workflows/*.yaml)
+    shopt -u nullglob
+    if [ ${#TARGETS[@]} -eq 0 ]; then
+      echo "No workflow files found under .github/workflows/ - nothing to validate." >&2
+      exit 1
+    fi
+  fi
+
+  TOTAL_WARNINGS=0
+  for f in "${TARGETS[@]}"; do
+    set +e
+    validate_workflow_file "$f"
+    file_warnings=$?
+    set -e
+    TOTAL_WARNINGS=$((TOTAL_WARNINGS + file_warnings))
+  done
+
+  echo "-----"
+  if [ "$TOTAL_WARNINGS" -eq 0 ]; then
+    echo "All clear - $TOTAL_WARNINGS warnings across ${#TARGETS[@]} file(s)."
+  else
+    echo "$TOTAL_WARNINGS warning(s) across ${#TARGETS[@]} file(s)."
+  fi
+
+  if [ "$STRICT" = true ] && [ "$TOTAL_WARNINGS" -gt 0 ]; then
+    exit 1
+  fi
+  exit 0
+fi
 
 # --- stdin/tty handling -------------------------------------------------
 # When this script runs via `curl ... | bash`, bash's stdin (fd 0) is the

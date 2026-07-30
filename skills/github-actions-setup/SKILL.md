@@ -18,6 +18,10 @@ For a real project directory, the cleanest approach is to run `scripts/setup.sh`
 
 Prefer running the script over hand-writing YAML when you have shell access to the user's project — it guarantees valid, tested output and takes one command.
 
+## Auditing an existing workflow
+
+If the user already has a `.github/workflows/*.yml` file (whether this script wrote it or not) and asks you to review it, don't just eyeball the YAML — run `scripts/setup.sh --validate` from the project root (or `--validate=path/to/file.yml` for a specific file). It checks for the same things a careful reviewer would: a missing top-level `permissions:` block, a deploy-looking job with no `needs:` gate (so it can run even if tests failed), a deploy-looking job with no `if:` restricting it to a branch/event (so it can fire from any PR, including forks), and actions pinned to a mutable `@main`/`@master` tag instead of a version or SHA. Add `--strict` if the user wants a non-zero exit code for CI/pre-push use. This is a real check against real files — prefer it over guessing from a pasted snippet, since it won't miss something a quick read would.
+
 ## When to use the standalone templates instead
 
 If the user just wants to see or copy a workflow file (no shell access to their repo, or they want to review before applying), use the matching file in `assets/workflows/` directly:

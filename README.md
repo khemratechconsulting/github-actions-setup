@@ -30,6 +30,7 @@ Point it at a project and it will:
 - **Generate a real workflow** — a `test` job gates a `deploy` job; nothing reaches production without passing tests first.
 - **Set up Dependabot** — weekly dependency + GitHub Actions version updates, for free.
 - **Tell you exactly what to do next** — the precise secret names to add, and which GitHub Environment to create.
+- **Audit an existing workflow** — `--validate` checks any `.github/workflows/*.yml` for missing `permissions:`, ungated deploy jobs, and unpinned `@main`/`@master` actions; `--strict` exits non-zero for CI use.
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/khemratechconsulting/github-actions-setup/main/skills/github-actions-setup/scripts/setup.sh)
