@@ -67,7 +67,6 @@ done
 validate_workflow_file() {
   local file="$1"
   local warnings=0
-  local has_permissions=false
   local current_job=""
   local job_is_deploy=false
   local job_has_needs=false
@@ -439,6 +438,9 @@ if [ ! -f "$DEPENDABOT_FILE" ]; then
     node) ECOSYSTEM="npm" ;;
     python) ECOSYSTEM="pip" ;;
     go) ECOSYSTEM="gomod" ;;
+    *) ECOSYSTEM="npm" ;;  # unreachable in practice (LANG_DETECTED is already
+                           # validated above), kept as an explicit no-op default
+                           # rather than an implicit fallthrough
   esac
   cat > "$DEPENDABOT_FILE" <<EOF
 version: 2
