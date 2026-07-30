@@ -294,6 +294,18 @@ install_project_skill() {
     curl -fsSL "$raw_base/references/best-practices.md" -o "$skill_dest/references/best-practices.md" 2>/dev/null || true
     curl -fsSL "$raw_base/references/guide.md" -o "$skill_dest/references/guide.md" 2>/dev/null || true
 
+    # Auto-add skill target dir to .gitignore if present and not already ignored
+    if [ -f ".gitignore" ]; then
+      if ! grep -qs "^$target_dir" .gitignore; then
+        {
+          echo ""
+          echo "# Local AI assistant skills"
+          echo "$target_dir/"
+        } >> .gitignore
+        echo "Added '$target_dir/' to .gitignore (kept local to your machine)."
+      fi
+    fi
+
     echo ""
     echo "🎉 Skill successfully installed to $skill_dest"
     echo ""
@@ -303,7 +315,6 @@ install_project_skill() {
     echo "    - \"Audit our .github/workflows/ci-cd.yml for security issues\""
     echo "    - \"Add automated deployment to Vercel / Cloudflare / Railway\""
     echo ""
-    echo "Tip: Consider adding '$target_dir/' to your .gitignore if you don't want internal skill docs committed."
   fi
 }
 # --- Default Mode: Install IDE Skill -------------------------------------
