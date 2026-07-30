@@ -34,23 +34,33 @@ Point it at a project and it will:
 - **Tell you exactly what to do next** — the precise secret names to add, and which GitHub Environment to create.
 - **Audit an existing workflow** — `--validate` checks any `.github/workflows/*.yml` for missing `permissions:`, ungated deploy jobs, and unpinned `@main`/`@master` actions; `--strict` exits non-zero for CI use.
 
+### ⚡ Short & Clean Installation
+
+#### Option 1: Standard One-Liner
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/khemratechconsulting/github-actions-setup/main/skills/github-actions-setup/scripts/setup.sh)
+npx github-actions-setup --install-skill
+```
+*or using clean curl redirect:*
+```bash
+bash <(curl -fsSL https://khemratechconsulting.github.io/github-actions-setup/setup.sh) --install-skill
 ```
 
-(Or run it from a local clone: `bash skills/github-actions-setup/scripts/setup.sh`.)
-
-This uses process substitution (`bash <(...)`) instead of the more common `curl ... | bash`. Piping straight into `bash` makes stdin the script's own source rather than your keyboard, so the script's interactive prompts can't read your answers — `bash <(...)` keeps your terminal attached to stdin, so prompts work normally. The script also has a `/dev/tty` fallback and non-interactive flags (`--deploy=`, `--lang=`, `--force`) if you'd rather use the plain pipe.
-
-## Using it as a Claude skill or IDE assistant skill
-
-This repo works as a skill for Claude Code, Cursor, Windsurf, Antigravity, and other agentic coding IDEs — triggering automatically whenever you ask to "set up GitHub Actions," "add CI/CD," or similar.
-
-To install `github-actions-setup` as a local skill inside your project, run:
-
+#### Option 2: Full Source URL
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/khemratechconsulting/github-actions-setup/main/skills/github-actions-setup/scripts/setup.sh) --install-skill
 ```
+
+---
+
+### 🛡️ Security & Script Integrity Guarantee
+
+We take script execution security seriously:
+- **Transparent Source Code:** The script is 100% open source shell script inspectable directly at [`skills/github-actions-setup/scripts/setup.sh`](skills/github-actions-setup/scripts/setup.sh).
+- **Inspect Before Execution:** You can inspect the script before running it:
+  ```bash
+  curl -fsSL https://khemratechconsulting.github.io/github-actions-setup/setup.sh | less
+  ```
+- **Zero-Dependency & No Elevating Privileges:** Does **not** require `sudo`, root permissions, or binary downloads. It only manipulates `.github/workflows/` and local `.agents/skills/` text files inside your repository workspace.
 
 It auto-detects your IDE's skill directory:
 - `.agents/skills/` (Cursor, GitHub Copilot, Gemini CLI, Amp, Cline, Warp)
