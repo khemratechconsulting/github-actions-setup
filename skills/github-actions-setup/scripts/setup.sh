@@ -699,14 +699,33 @@ install_project_skill() {
     fi
   fi
 
-  local skill_dest="$target_dir/github-actions-setup"
+  local skill_name="github-actions-setup"
+  local skill_dest="$target_dir/$skill_name"
+
   if [ -d "$skill_dest" ] && [ "$FORCE" = false ]; then
     if [ "$INTERACTIVE" = true ]; then
-      read -rp "Skill at $skill_dest already exists. Overwrite? [y/N]: " ow_skill
-      if [[ ! "$ow_skill" =~ ^[Yy]$ ]]; then
-        echo "Skipped skill installation."
-        return 0
-      fi
+      echo ""
+      echo "Skill at $skill_dest already exists."
+      echo "  1) Overwrite existing skill ($skill_dest)"
+      echo "  2) Create a new skill with a custom folder name"
+      echo "  3) Cancel"
+      read -rp "Choose [1-3] (default: 1): " ow_choice
+      case $ow_choice in
+        2)
+          read -rp "Enter new skill name (e.g. github-actions-setup-v2): " custom_name
+          if [ -n "$custom_name" ]; then
+            skill_name="$custom_name"
+            skill_dest="$target_dir/$skill_name"
+          fi
+          ;;
+        3)
+          echo "Installation cancelled."
+          return 0
+          ;;
+        *)
+          # Overwrite chosen
+          ;;
+      esac
     else
       echo "Skill at $skill_dest already exists. Pass --force to overwrite." >&2
       return 0
