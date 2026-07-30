@@ -1,6 +1,6 @@
 <div align="center">
 
-![github-actions-setup]([docs/assets/hero-banner.png](https://khemratechconsulting.github.io/github-actions-setup])
+![github-actions-setup](docs/assets/hero-banner.png)
 
 # github-actions-setup
 
@@ -10,6 +10,7 @@
 ![Deploy Targets](https://img.shields.io/badge/deploy_targets-3-ff8a5b?style=for-the-badge)
 ![Languages](https://img.shields.io/badge/languages-node%20%7C%20python%20%7C%20go-3ecf8e?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-e8e9ed?style=for-the-badge)
+![Pricing Tiers](https://img.shields.io/badge/pricing_tiers-4-5b8cff?style=for-the-badge)
 ![Stars](https://img.shields.io/github/stars/khemratechconsulting/github-actions-setup?style=for-the-badge&color=5b8cff)
 
 Auto-detects your language, writes a tested GitHub Actions workflow, and wires up secrets, environments, and dependency updates — the way a careful senior engineer would, not a copy-pasted tutorial.
@@ -51,9 +52,40 @@ This repo is also a [Claude skill](https://docs.claude.com/en/docs/claude-code/s
 
 Full write-up of the security and efficiency choices baked into these: [`skills/github-actions-setup/references/best-practices.md`](skills/github-actions-setup/references/best-practices.md).
 
-## Pro
+## Pricing
 
-The free tier covers the three most common deploy targets. **Pro** adds Google Cloud Run, Docker/GHCR multi-arch builds, and a staging→production promotion workflow with manual approval gates and Slack notifications — see the [pricing section](https://khemratechconsulting.github.io/github-actions-setup#pricing) on the site.
+The free tier above covers the three most common deploy targets and is a complete toolkit on its own. Four paid tiers stack additional deploy targets and workflow patterns on top of it — each includes everything from the tier before it.
+
+| Tier | Price | Adds |
+|---|---|---|
+| Starter | $2.77/mo | Priority email support, early access to new templates |
+| Builder | $4.77/mo | Google Cloud Run (OIDC), Docker/GHCR multi-arch builds |
+| Shipper | $7.77/mo | Staging → production promotion, Slack deploy notifications |
+| **Pro** | **$9.77/mo** | Custom deploy target requests, 1:1 setup call |
+
+<details>
+<summary>Full feature breakdown</summary>
+
+**Starter — $2.77/mo**
+- Everything in the free OSS core
+- Priority email support
+- Early access to new deploy templates
+
+**Builder — $4.77/mo** (everything in Starter, plus)
+- Google Cloud Run deploy, authenticated via Workload Identity Federation
+- Docker/GHCR multi-arch builds with layer caching and semver tagging
+
+**Shipper — $7.77/mo** (everything in Builder, plus)
+- Staging → production promotion workflow with a manual approval gate
+- Slack notifications on deploy
+
+**Pro — $9.77/mo** (everything in Shipper, plus)
+- Custom deploy target requests
+- A 30-minute 1:1 setup call
+
+</details>
+
+Get any tier from the [pricing section](https://khemratechconsulting.github.io/github-actions-setup#pricing) on the site.
 
 ## Contributing
 
