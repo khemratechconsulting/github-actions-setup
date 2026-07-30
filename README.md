@@ -48,10 +48,6 @@ bash <(curl -fsSL https://raw.githubusercontent.com/khemratechconsulting/github-
 
 We take script execution security seriously:
 - **Transparent Source Code:** The script is 100% open source shell script inspectable directly at [`skills/github-actions-setup/scripts/setup.sh`](skills/github-actions-setup/scripts/setup.sh).
-- **Inspect Source Code Before Running:** View the raw shell script line-by-line:
-  ```bash
-  curl -fsSL https://raw.githubusercontent.com/khemratechconsulting/github-actions-setup/main/skills/github-actions-setup/scripts/setup.sh | less
-  ```
 - **Zero-Dependency & No Elevating Privileges:** Does **not** require `sudo`, root permissions, or binary downloads. It only manipulates `.github/workflows/` and local `.agents/skills/` text files inside your repository workspace.
 
 It auto-detects your IDE's skill directory:
