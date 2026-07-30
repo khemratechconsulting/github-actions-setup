@@ -1,6 +1,6 @@
 <div align="center">
 
-![github-actions-setup](docs/assets/hero-banner.png)
+![github-actions-setup]([docs/assets/hero-banner.png](https://khemratechconsulting.github.io/github-actions-setup/)
 
 # github-actions-setup
 
