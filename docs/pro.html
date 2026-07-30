@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Get github-actions-setup Pro</title>
+<title>Get github-actions-setup Supporter</title>
 <meta name="description" content="Checkout for github-actions-setup paid tiers.">
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <style>
@@ -54,9 +54,9 @@
   <div class="logo-row"><img src="assets/logo.png" alt="" style="width:24px;height:24px;border-radius:6px;"> github-actions-setup</div>
 
   <div class="card">
-    <p class="tier-label" id="tier-label">Pro</p>
-    <p class="tier-name" id="tier-name">Pro</p>
-    <p class="tier-price" id="tier-price">$9.77 / month</p>
+    <p class="tier-label" id="tier-label">Supporter</p>
+    <p class="tier-name" id="tier-name">Supporter</p>
+    <p class="tier-price" id="tier-price">$1.99 / month</p>
     <ul class="included" id="tier-features"></ul>
 
     <a class="btn" id="checkout-btn" href="#">Continue to checkout</a>
@@ -72,25 +72,30 @@
 
 <script>
   // Fill in a real Gumroad (or Stripe) checkout/membership URL here once the
-  // product exists. All four tiers share one Gumroad membership product with
-  // four versions — Gumroad's overlay lets the buyer pick the matching one.
-  // Leave empty and the page falls back to a waitlist capture instead of a
-  // dead link, so this never 404s regardless of setup status.
+  // Supporter product exists. Leave empty and the page falls back to a
+  // waitlist capture instead of a dead link, so this never 404s regardless
+  // of setup status. When the draft tiers below relaunch, this can point
+  // at a single membership product with a version per tier.
   const CHECKOUT_URL = "";
 
   const TIERS = {
-    starter: {
-      name: "Starter", price: "$2.77 / month",
+    supporter: {
+      name: "Supporter", price: "$1.99 / month",
       features: [
         "Everything in the free OSS core",
         "Priority email support",
         "Early access to new deploy templates",
       ],
     },
+
+    /* Draft tiers — built and tested, held back until the project has a
+       real user base (see the matching commented-out cards in index.html).
+       Uncomment here plus there to relaunch them.
+
     builder: {
       name: "Builder", price: "$4.77 / month",
       features: [
-        "Everything in Starter",
+        "Everything in Supporter",
         "Google Cloud Run deploy (OIDC)",
         "Docker / GHCR multi-arch builds",
       ],
@@ -111,10 +116,11 @@
         "1:1 setup call (30 min)",
       ],
     },
+    */
   };
 
   const params = new URLSearchParams(window.location.search);
-  const tierId = TIERS[params.get("tier")] ? params.get("tier") : "pro";
+  const tierId = TIERS[params.get("tier")] ? params.get("tier") : "supporter";
   const tier = TIERS[tierId];
 
   document.getElementById("tier-label").textContent = tierId;

@@ -13,6 +13,8 @@ Open an issue with: what you ran, what you expected, what happened instead. For 
 3. If you're changing `setup.sh`, run it against a sample Node/Python/Go project locally for each deploy target before submitting.
 4. Open a PR describing the change and why. Small, focused PRs get reviewed faster than large ones.
 
+`main` is protected — nobody can push to it directly, including maintainers. Every change lands via a pull request, the CI check has to pass, and it needs a review approval before it can be merged. Expect the CI check to run automatically on your PR; if it's red, fix it before requesting review.
+
 ## Scope
 
 This project intentionally stays narrow: language auto-detection (Node/Python/Go) and a small set of well-tested deploy targets, rather than trying to cover every possible platform. New deploy targets are welcome as long as they follow the existing pattern (test job gates deploy job, secrets documented in a header comment, environment-gated production deploy).
